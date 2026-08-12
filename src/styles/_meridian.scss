@@ -674,6 +674,35 @@
   }
 }
 
+// ---- Error boundary fallback (contained render crashes) ----
+.maputnik-error-boundary {
+  margin: vars.$margin-3;
+  padding: vars.$margin-3;
+  border: 1px solid rgba(224, 118, 110, 0.35);
+  background: rgba(224, 118, 110, 0.08);
+  border-radius: vars.$radius-2;
+  color: vars.$color-white;
+  text-align: center;
+
+  svg {
+    color: vars.$color-red;
+    margin-bottom: 6px;
+  }
+
+  p {
+    color: vars.$color-white;
+    margin: 0;
+  }
+
+  &-detail {
+    margin-top: 4px !important;
+    color: vars.$color-lowgray !important;
+    font-family: vars.$font-family-mono;
+    font-size: 11px !important;
+    overflow-wrap: anywhere;
+  }
+}
+
 .meridian-pin {
   color: vars.$color-lowgray;
 

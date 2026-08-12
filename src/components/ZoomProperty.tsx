@@ -156,7 +156,7 @@ class ZoomPropertyInternal extends React.Component<ZoomPropertyInternalProps, Zo
 
   render() {
     const t = this.props.t;
-    const zoomFields = this.props.value?.stops.map((stop, idx) => {
+    const zoomFields = this.props.value?.stops?.map((stop, idx) => {
       const zoomLevel = stop[0];
       const value = stop[1];
       const deleteStopBtn = <DeleteStopButton onClick={this.props.onDeleteStop?.bind(this, idx)} />;

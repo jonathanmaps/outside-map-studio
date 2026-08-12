@@ -28,6 +28,7 @@ import { ModalShortcuts } from "./modals/ModalShortcuts";
 import { ModalDebug } from "./modals/ModalDebug";
 import { ModalGlobalState } from "./modals/ModalGlobalState";
 
+import { ErrorBoundary } from "./ErrorBoundary";
 import { CommandPalette, type Command } from "./CommandPalette";
 import { AICopilotPanel } from "./AICopilotPanel";
 import { TimelinePanel } from "./TimelinePanel";
@@ -1002,23 +1003,25 @@ export class App extends React.Component<any, AppState> {
       errors={this.state.errors}
     />;
 
-    const layerEditor = selectedLayer ? <LayerEditor
-      key={this.state.selectedLayerOriginalId}
-      layer={selectedLayer}
-      layerIndex={this.state.selectedLayerIndex}
-      isFirstLayer={this.state.selectedLayerIndex < 1}
-      isLastLayer={this.state.selectedLayerIndex === this.state.mapStyle.layers.length-1}
-      sources={this.state.sources}
-      vectorLayers={this.state.vectorLayers}
-      spec={this.state.spec}
-      onMoveLayer={this.onMoveLayer}
-      onLayerChanged={this.onLayerChanged}
-      onLayerDestroy={this.onLayerDestroy}
-      onLayerCopy={this.onLayerCopy}
-      onLayerVisibilityToggle={this.onLayerVisibilityToggle}
-      onLayerIdChange={this.onLayerIdChange}
-      errors={this.state.errors}
-    /> : undefined;
+    const layerEditor = selectedLayer ? <ErrorBoundary resetKey={this.state.selectedLayerOriginalId}>
+      <LayerEditor
+        key={this.state.selectedLayerOriginalId}
+        layer={selectedLayer}
+        layerIndex={this.state.selectedLayerIndex}
+        isFirstLayer={this.state.selectedLayerIndex < 1}
+        isLastLayer={this.state.selectedLayerIndex === this.state.mapStyle.layers.length-1}
+        sources={this.state.sources}
+        vectorLayers={this.state.vectorLayers}
+        spec={this.state.spec}
+        onMoveLayer={this.onMoveLayer}
+        onLayerChanged={this.onLayerChanged}
+        onLayerDestroy={this.onLayerDestroy}
+        onLayerCopy={this.onLayerCopy}
+        onLayerVisibilityToggle={this.onLayerVisibilityToggle}
+        onLayerIdChange={this.onLayerIdChange}
+        errors={this.state.errors}
+      />
+    </ErrorBoundary> : undefined;
 
     const bottomPanel = (this.state.errors.length + this.state.infos.length) > 0 ? <MessagePanel
       currentLayer={selectedLayer}
