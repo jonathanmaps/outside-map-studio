@@ -1,0 +1,577 @@
+import { test, expect, describe, beforeEach } from "./utils/fixtures";
+import { MaputnikDriver } from "./maputnik-driver";
+import tokens from "../src/config/tokens.json" with { type: "json" };
+
+describe("modals", () => {
+  const { given, get, when, then } = new MaputnikDriver();
+
+  beforeEach(async () => {
+    await given.setupMockBackedResponses();
+    await when.setStyle("both");
+    await when.setStyle("");
+  });
+
+  describe("open", () => {
+    beforeEach(async () => {
+      await when.click("nav:open");
+    });
+
+    test("close", async () => {
+      await when.modal.close("modal:open");
+      await then(get.elementByTestId("modal:open")).shouldNotExist();
+    });
+
+    test("upload", async () => {
+      await when.chooseExampleFile();
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude(get.fixture("example-style.json"));
+    });
+
+    test("upload via drag and drop", async () => {
+      await when.dropExampleFile();
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude(get.fixture("example-style.json"));
+    });
+
+    describe("when click open url", () => {
+      beforeEach(async () => {
+        const styleFileUrl = get.exampleFileUrl();
+
+        await when.setValue("modal:open.url.input", styleFileUrl);
+        await when.click("modal:open.url.button");
+        await when.wait(200);
+      });
+      test("load from url", async () => {
+        await then(get.styleFromLocalStorage()).shouldDeepNestedInclude(get.responseBody("example-style.json"));
+      });
+    });
+
+    describe("without the File System Access API", () => {
+      test("upload via the file chooser", async () => {
+        await given.noFileSystemAccessApi();
+        await when.setStyle("");
+        await when.click("nav:open");
+        await when.chooseExampleFileFromPicker();
+        await then(get.styleFromLocalStorage()).shouldDeepNestedInclude(get.fixture("example-style.json"));
+      });
+    });
+  });
+
+  describe("shortcuts", () => {
+    test("open/close", async () => {
+      await when.setStyle("");
+      await when.typeKeys("?");
+      await when.modal.close("modal:shortcuts");
+      await then(get.elementByTestId("modal:shortcuts")).shouldNotExist();
+    });
+  });
+
+  describe("export", () => {
+    beforeEach(async () => {
+      await when.click("nav:export");
+    });
+
+    test("close", async () => {
+      await when.modal.close("modal:export");
+      await then(get.elementByTestId("modal:export")).shouldNotExist();
+    });
+
+    test("download HTML and save the style", async () => {
+      // Generate the standalone HTML export (triggers a file download).
+      await when.modal.exportCreateHtml();
+      await then(get.elementByTestId("modal:export")).shouldExist();
+
+      // Saving the style closes the export modal.
+      await when.modal.exportSaveStyle();
+      await then(get.elementByTestId("modal:export")).shouldNotExist();
+    });
+  });
+
+  describe("sources", () => {
+    beforeEach(async () => {
+      await when.setStyle("layer");
+      await when.click("nav:sources");
+    });
+
+    test("active sources are listed and can be deleted", async () => {
+      await when.setStyle("both");
+      await when.click("nav:sources");
+      const before = Object.keys(get.fixture("geojson-raster-style.json").sources).length;
+      await when.modal.deleteFirstActiveSource();
+      await then(
+        get.styleFromLocalStorage().then((style) => Object.keys(style.sources).length)
+      ).shouldEqual(before - 1);
+    });
+
+    test("public source", async () => {
+      await when.modal.addPublicSource();
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          openmaptiles: {
+            type: "vector",
+            url: `https://api.maptiler.com/tiles/v3-openmaptiles/tiles.json?key=${tokens.openmaptiles}`,
+          },
+        },
+      });
+    });
+
+    test("add new source", async () => {
+      const sourceId = "n1z2v3r";
+      await when.setValue("modal:sources.add.source_id", sourceId);
+      await when.select("modal:sources.add.source_type", "tile_vector");
+      await when.select("modal:sources.add.scheme_type", "tms");
+      await when.click("modal:sources.add.add_source");
+      await when.wait(200);
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: { [sourceId]: { scheme: "tms" } },
+      });
+    });
+
+    test("add new pmtiles source", async () => {
+      const sourceId = "pmtilestest";
+      await when.setValue("modal:sources.add.source_id", sourceId);
+      await when.select("modal:sources.add.source_type", "pmtiles_vector");
+      await when.setValue(
+        "modal:sources.add.source_url",
+        "https://data.source.coop/protomaps/openstreetmap/v4.pmtiles"
+      );
+      await when.click("modal:sources.add.add_source");
+      await when.click("modal:sources.add.add_source");
+      await when.wait(200);
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          pmtilestest: {
+            type: "vector",
+            url: "pmtiles://https://data.source.coop/protomaps/openstreetmap/v4.pmtiles",
+          },
+        },
+      });
+    });
+
+    test("add new raster source", async () => {
+      const sourceId = "rastertest";
+      await when.setValue("modal:sources.add.source_id", sourceId);
+      await when.select("modal:sources.add.source_type", "tile_raster");
+      await when.select("modal:sources.add.scheme_type", "xyz");
+      await when.setValue("modal:sources.add.tile_size", "128");
+      await when.click("modal:sources.add.add_source");
+      await when.wait(200);
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: { [sourceId]: { tileSize: 128 } },
+      });
+    });
+
+    test("add new geojson url source", async () => {
+      await when.modal.addSource("geojsonurl", "geojson_url");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          geojsonurl: { type: "geojson", data: "http://localhost:3000/geojson.json" },
+        },
+      });
+    });
+
+    test("add new geojson json source", async () => {
+      await when.modal.addSource("geojsonjson", "geojson_json");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          geojsonjson: { type: "geojson", cluster: false, data: "" },
+        },
+      });
+    });
+
+    test("add new tilejson vector source", async () => {
+      await when.modal.addSource("tilejsonvector", "tilejson_vector");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          tilejsonvector: { type: "vector", url: "http://localhost:3000/tilejson.json" },
+        },
+      });
+    });
+
+    test("add new tilejson raster source", async () => {
+      await when.modal.addSource("tilejsonraster", "tilejson_raster");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          tilejsonraster: { type: "raster", url: "http://localhost:3000/tilejson.json" },
+        },
+      });
+    });
+
+    test("add new tilejson raster-dem source", async () => {
+      await when.modal.addSource("tilejsonrasterdem", "tilejson_raster-dem");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          tilejsonrasterdem: { type: "raster-dem", url: "http://localhost:3000/tilejson.json" },
+        },
+      });
+    });
+
+    test("add new tile xyz raster-dem source", async () => {
+      await when.modal.addSource("tilexyzrasterdem", "tilexyz_raster-dem");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          tilexyzrasterdem: {
+            type: "raster-dem",
+            tiles: ["http://localhost:3000/{x}/{y}/{z}.png"],
+            minzoom: 0,
+            maxzoom: 14,
+            tileSize: 512,
+          },
+        },
+      });
+    });
+
+    test("add new image source", async () => {
+      await when.modal.addSource("imagesource", "image");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          imagesource: {
+            type: "image",
+            url: "http://localhost:3000/image.png",
+            coordinates: [[0, 0], [0, 0], [0, 0], [0, 0]],
+          },
+        },
+      });
+    });
+
+    test("add new video source", async () => {
+      await when.modal.addSource("videosource", "video");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          videosource: {
+            type: "video",
+            urls: ["http://localhost:3000/movie.mp4"],
+            coordinates: [[0, 0], [0, 0], [0, 0], [0, 0]],
+          },
+        },
+      });
+    });
+
+    test("edit the corner coordinates of an image source", async () => {
+      const sourceId = "imagecoords";
+      await when.setValue("modal:sources.add.source_id", sourceId);
+      await when.select("modal:sources.add.source_type", "image");
+      // The first corner is the first two number boxes of the coordinate arrays.
+      await when.modal.setCoordinateValue(0, "1");
+      await when.modal.setCoordinateValue(1, "2");
+      await when.click("modal:sources.add.add_source");
+      await when.wait(200);
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sources: {
+          [sourceId]: { type: "image", coordinates: [[1, 2], [0, 0], [0, 0], [0, 0]] },
+        },
+      });
+    });
+  });
+
+  describe("inspect", () => {
+    test("toggle", async () => {
+      // There is no assertion in this test
+      await when.setStyle("geojson");
+      await when.select("maputnik-select", "inspect");
+    });
+  });
+
+  describe("style settings", () => {
+    beforeEach(async () => {
+      await when.click("nav:settings");
+    });
+
+    describe("when click name filed spec information", () => {
+      beforeEach(async () => {
+        await when.click("field-doc-button-Name");
+      });
+
+      test("should show the spec information", async () => {
+        await then(get.elementsText("spec-field-doc")).shouldInclude("name for the style");
+      });
+    });
+
+    describe("when set name and click owner", () => {
+      beforeEach(async () => {
+        await when.setValue("modal:settings.name", "foobar");
+        await when.click("modal:settings.owner");
+        await when.wait(200);
+      });
+
+      test("show name specifications", async () => {
+        await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+          name: "foobar",
+        });
+      });
+    });
+
+    describe("when set owner and click name", () => {
+      beforeEach(async () => {
+        await when.setValue("modal:settings.owner", "foobar");
+        await when.click("modal:settings.name");
+        await when.wait(200);
+      });
+      test("should update owner in local storage", async () => {
+        await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+          owner: "foobar",
+        });
+      });
+    });
+
+    test("sprite url", async () => {
+      await when.setTextInJsonEditor('"http://example.com"');
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sprite: "http://example.com",
+      });
+    });
+
+    test("sprite object", async () => {
+      await when.setTextInJsonEditor(JSON.stringify([{ id: "1", url: "2" }]));
+
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        sprite: [{ id: "1", url: "2" }],
+      });
+    });
+
+    test("glyphs url", async () => {
+      const glyphsUrl = "http://example.com/{fontstack}/{range}.pbf";
+      await when.setValue("modal:settings.glyphs", glyphsUrl);
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        glyphs: glyphsUrl,
+      });
+    });
+
+    test("maptiler access token", async () => {
+      const apiKey = "testing123";
+      await when.setValue("modal:settings.maputnik:openmaptiles_access_token", apiKey);
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        metadata: { "maputnik:openmaptiles_access_token": apiKey },
+      });
+    });
+
+    test("thunderforest access token", async () => {
+      const apiKey = "testing123";
+      await when.setValue("modal:settings.maputnik:thunderforest_access_token", apiKey);
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        metadata: { "maputnik:thunderforest_access_token": apiKey },
+      });
+    });
+
+    test("stadia access token", async () => {
+      const apiKey = "testing123";
+      await when.setValue("modal:settings.maputnik:stadia_access_token", apiKey);
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        metadata: { "maputnik:stadia_access_token": apiKey },
+      });
+    });
+
+    test("locationiq access token", async () => {
+      const apiKey = "testing123";
+      await when.setValue("modal:settings.maputnik:locationiq_access_token", apiKey);
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        metadata: { "maputnik:locationiq_access_token": apiKey },
+      });
+    });
+
+    test("map view defaults", async () => {
+      await when.setValue("modal:settings.zoom", "4");
+      await when.setValue("modal:settings.bearing", "12");
+      await when.setValue("modal:settings.pitch", "30");
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        zoom: 4,
+        bearing: 12,
+        pitch: 30,
+      });
+    });
+
+    test("light intensity", async () => {
+      await when.setValue("modal:settings.light-intensity", "0.7");
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        light: { intensity: 0.7 },
+      });
+    });
+
+    test("terrain source and exaggeration", async () => {
+      await when.setValue("modal:settings.maputnik:terrain_source", "terrain");
+      await when.setValue("modal:settings.terrain-exaggeration", "1.5");
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        terrain: { source: "terrain", exaggeration: 1.5 },
+      });
+    });
+
+    test("transition delay and duration", async () => {
+      await when.setValue("modal:settings.transition-delay", "100");
+      await when.setValue("modal:settings.transition-duration", "500");
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        transition: { delay: 100, duration: 500 },
+      });
+    });
+
+    test("style projection mercator", async () => {
+      await when.select("modal:settings.projection", "mercator");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        projection: { type: "mercator" },
+      });
+    });
+
+    test("style projection globe", async () => {
+      await when.select("modal:settings.projection", "globe");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        projection: { type: "globe" },
+      });
+    });
+
+    test("style projection vertical-perspective", async () => {
+      await when.select("modal:settings.projection", "vertical-perspective");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        projection: { type: "vertical-perspective" },
+      });
+    });
+
+    test("style renderer", async () => {
+      await when.select("modal:settings.maputnik:renderer", "ol");
+      await then(get.inputValue("modal:settings.maputnik:renderer")).shouldEqual("ol");
+
+      await when.click("modal:settings.name");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        metadata: { "maputnik:renderer": "ol" },
+      });
+    });
+
+    test("include API key when change renderer", async () => {
+      await when.click("modal:settings.close-modal");
+      await when.click("nav:open");
+
+      await when.clickByAttribute("aria-label", "MapTiler Basic");
+      await when.wait(1000);
+      await when.click("nav:settings");
+
+      await when.select("modal:settings.maputnik:renderer", "mlgljs");
+      await then(get.inputValue("modal:settings.maputnik:renderer")).shouldEqual("mlgljs");
+
+      await when.select("modal:settings.maputnik:renderer", "ol");
+      await then(get.inputValue("modal:settings.maputnik:renderer")).shouldEqual("ol");
+
+      await given.intercept(
+        /https:\/\/api\.maptiler\.com\/tiles\/v3-openmaptiles\/tiles\.json\?key=.*/,
+        "tileRequest",
+        "GET"
+      );
+
+      await when.select("modal:settings.maputnik:renderer", "mlgljs");
+      await then(get.inputValue("modal:settings.maputnik:renderer")).shouldEqual("mlgljs");
+
+      const request = await when.waitForResponse("tileRequest");
+      expect(request.url()).toContain(
+        `https://api.maptiler.com/tiles/v3-openmaptiles/tiles.json?key=${tokens.openmaptiles}`
+      );
+    });
+  });
+
+  describe("add layer", () => {
+    beforeEach(async () => {
+      await when.setStyle("layer");
+      await when.modal.open();
+    });
+
+    test("shows duplicate id error", async () => {
+      await when.setValue("add-layer.layer-id.input", "background");
+      await when.click("add-layer");
+      await then(get.elementByTestId("modal:add-layer")).shouldExist();
+      await then(get.element(".maputnik-modal-error")).shouldContainText("Layer ID already exists");
+    });
+  });
+
+  describe("global state", () => {
+    beforeEach(async () => {
+      await when.click("nav:global-state");
+    });
+
+    test("add variable", async () => {
+      await when.wait(100);
+      await when.click("global-state-add-variable");
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        state: { key1: { default: "value" } },
+      });
+    });
+
+    test("add multiple variables", async () => {
+      await when.click("global-state-add-variable");
+      await when.click("global-state-add-variable");
+      await when.click("global-state-add-variable");
+      await when.wait(100);
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        state: { key1: { default: "value" }, key2: { default: "value" }, key3: { default: "value" } },
+      });
+    });
+
+    test("remove variable", async () => {
+      await when.click("global-state-add-variable");
+      await when.click("global-state-add-variable");
+      await when.click("global-state-add-variable");
+      await when.click("global-state-remove-variable", 0);
+      await when.wait(100);
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        state: { key2: { default: "value" }, key3: { default: "value" } },
+      });
+    });
+
+    test("edit variable key", async () => {
+      await when.click("global-state-add-variable");
+      await when.wait(100);
+      await when.setValue("global-state-variable-key:0", "mykey");
+      await when.typeKeys("{enter}");
+      await when.wait(100);
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        state: { mykey: { default: "value" } },
+      });
+    });
+
+    test("edit variable value", async () => {
+      await when.click("global-state-add-variable");
+      await when.wait(100);
+      await when.setValue("global-state-variable-value:0", "myvalue");
+      await when.typeKeys("{enter}");
+      await when.wait(100);
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude({
+        state: { key1: { default: "myvalue" } },
+      });
+    });
+  });
+
+  describe("error panel", () => {
+    test("not visible when no errors", async () => {
+      await then(get.element("maputnik-message-panel-error")).shouldNotExist();
+    });
+
+    test("visible on style error", async () => {
+      await when.modal.open();
+      await when.modal.fillLayers({
+        type: "circle",
+        layer: "invalid",
+      });
+      await then(get.element(".maputnik-message-panel-error")).shouldBeVisible();
+    });
+  });
+
+  describe("Handle localStorage QuotaExceededError", () => {
+    test("handles quota exceeded error when opening style from URL", async () => {
+      // Clear localStorage to start fresh
+      await when.clearLocalStorage();
+      await when.fillLocalStorage();
+
+      // Open the style via URL input
+      await when.click("nav:open");
+      await when.setValue("modal:open.url.input", get.exampleFileUrl());
+      await when.click("modal:open.url.button");
+
+      await then(get.styleFromLocalStorage()).shouldDeepNestedInclude(get.responseBody("example-style.json"));
+      await then(get.styleFromLocalStorage()).shouldExist();
+    });
+  });
+});
