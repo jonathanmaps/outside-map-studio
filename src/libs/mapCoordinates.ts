@@ -42,5 +42,9 @@ export function parseMapCoordinates(input: string, fallbackZoom = 12): MapCoordi
 }
 
 export function formatMapCoordinates(coordinates: MapCoordinates): string {
-  return `${coordinates.zoom}/${coordinates.lat}/${coordinates.lng}`;
+  // Round for display — raw map state carries 15-decimal float noise.
+  const zoom = Number(coordinates.zoom.toFixed(2));
+  const lat = Number(coordinates.lat.toFixed(4));
+  const lng = Number(coordinates.lng.toFixed(4));
+  return `${zoom}/${lat}/${lng}`;
 }

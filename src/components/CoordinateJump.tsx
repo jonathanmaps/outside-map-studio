@@ -12,8 +12,9 @@ export const CoordinateJump: React.FC<CoordinateJumpProps> = ({coordinates, onJu
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (document.activeElement?.getAttribute("data-wd-key") !== "map:coordinate-jump-input") {
+    if (document.activeElement?.getAttribute("data-wd-key") !== "toolbar:coordinate-jump-input") {
       setValue(formatMapCoordinates(coordinates));
+      setError(false);
     }
   }, [coordinates]);
 
@@ -27,22 +28,33 @@ export const CoordinateJump: React.FC<CoordinateJumpProps> = ({coordinates, onJu
     setError(false);
     setValue(formatMapCoordinates(parsed));
     onJump(parsed);
+    (document.activeElement as HTMLElement | null)?.blur();
   };
 
-  return <form className={`maputnik-coordinate-jump${error ? " maputnik-coordinate-jump--error" : ""}`} onSubmit={submit}>
-    <MdMyLocation />
+  return <form
+    className={`maputnik-coordinate-jump${error ? " maputnik-coordinate-jump--error" : ""}`}
+    onSubmit={submit}
+    title="Paste zoom/lat/lng (or lat, lng) and press Enter to jump — accepts full Maputnik/MapLibre URLs too"
+  >
+    <MdMyLocation aria-hidden="true" />
     <input
-      data-wd-key="map:coordinate-jump-input"
-      aria-label="Go to coordinates"
+      data-wd-key="toolbar:coordinate-jump-input"
+      aria-label="Go to coordinates (zoom/lat/lng)"
       value={value}
       onChange={event => {
         setValue(event.target.value);
         setError(false);
       }}
+      onFocus={event => event.target.select()}
+      onKeyDown={event => {
+        if (event.key === "Escape") {
+          setValue(formatMapCoordinates(coordinates));
+          setError(false);
+          (event.target as HTMLInputElement).blur();
+        }
+      }}
+      spellCheck={false}
       placeholder="zoom/lat/lng"
-      title="Enter zoom/latitude/longitude or latitude, longitude"
     />
-    <button data-wd-key="map:coordinate-jump-submit" type="submit">Go</button>
-    {error && <span role="alert">Use zoom/lat/lng or lat, lng</span>}
   </form>;
 };

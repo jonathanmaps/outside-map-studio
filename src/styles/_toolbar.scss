@@ -145,12 +145,40 @@
 
 .maputnik-toolbar__inner {
   display: flex;
+  min-width: 0;
 }
 
 .maputnik-toolbar__actions {
   white-space: nowrap;
   flex: 1;
-  overflow-y: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+}
+
+// Collapse button labels to icons before anything falls off-screen —
+// the View select must always stay reachable.
+@media (max-width: 1560px) {
+  .maputnik-toolbar__actions .maputnik-toolbar-action .maputnik-icon-text {
+    display: none;
+  }
+
+  .maputnik-toolbar__actions .maputnik-toolbar-action {
+    padding-left: vars.$margin-2;
+    padding-right: vars.$margin-2;
+  }
+}
+
+@media (max-width: 1100px) {
+  .maputnik-toolbar-search .maputnik-icon-text,
+  .maputnik-toolbar-search kbd {
+    display: none;
+  }
+
+  .maputnik-toolbar-logo .maputnik-toolbar-version {
+    display: none;
+  }
 }
 
 .maputnik-toolbar-skip {

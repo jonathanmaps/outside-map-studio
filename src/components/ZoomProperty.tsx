@@ -24,19 +24,11 @@ import { type MappedLayerErrors } from "../libs/definitions";
  * When the stops are reordered the references are also updated (see this.orderStops) this allows React to use the same key for the element and keep keyboard focus.
  */
 function setStopRefs(props: ZoomPropertyInternalProps, state: ZoomPropertyState) {
-  // This is initialised below only if required to improved performance.
-  let newRefs: {[key: number]: string} = {};
+  const newRefs: {[key: number]: string} = {};
 
   if(props.value && (props.value as ZoomWithStops).stops) {
     (props.value as ZoomWithStops).stops.forEach((_val, idx: number) => {
-      if(Object.prototype.hasOwnProperty.call(!state.refs, idx)) {
-        if(!newRefs) {
-          newRefs = {...state};
-        }
-        newRefs[idx] = docUid("stop-");
-      } else {
-        newRefs[idx] = state.refs[idx];
-      }
+      newRefs[idx] = state.refs[idx] ?? docUid("stop-");
     });
   }
   return newRefs;
@@ -160,8 +152,11 @@ class ZoomPropertyInternal extends React.Component<ZoomPropertyInternalProps, Zo
       const zoomLevel = stop[0];
       const value = stop[1];
       const deleteStopBtn = <DeleteStopButton onClick={this.props.onDeleteStop?.bind(this, idx)} />;
+      // Key by the stable per-stop ref, not the stop's value — keying by
+      // value remounts the row on every keystroke and kicks focus out of
+      // the input mid-edit.
       return <tr
-        key={`${stop[0]}-${stop[1]}`}
+        key={this.state.refs[idx]}
       >
         <td>
           <InputNumber

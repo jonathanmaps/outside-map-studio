@@ -22,6 +22,8 @@ import { withTranslation, type WithTranslation } from "react-i18next";
 import { supportedLanguages } from "../i18n";
 import type { OnStyleChangedCallback } from "../libs/definitions";
 import type { DockPanelType } from "./DockPanel";
+import { CoordinateJump } from "./CoordinateJump";
+import type { MapCoordinates } from "../libs/mapCoordinates";
 
 // This is required because of <https://stackoverflow.com/a/49846426>, there isn't another way to detect support that I'm aware of.
 const browser = detect();
@@ -122,6 +124,8 @@ type AppToolbarInternalProps = {
   activeDockPanel?: DockPanelType
   onToggleDockPanel(panel: Exclude<DockPanelType, null>): void
   onOpenCommandPalette(): void
+  mapCoordinates: MapCoordinates
+  onCoordinateJump(coordinates: MapCoordinates): void
 } & WithTranslation;
 
 class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
@@ -251,6 +255,11 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
           <kbd>⌘K</kbd>
         </button>
 
+        <CoordinateJump
+          coordinates={this.props.mapCoordinates}
+          onJump={this.props.onCoordinateJump}
+        />
+
         <div className="maputnik-toolbar__actions" role="navigation" aria-label="Toolbar">
           <ToolbarAction wdKey="nav:open" onClick={() => this.props.onToggleModal("open")}>
             <MdOpenInBrowser />
@@ -262,19 +271,19 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
           </ToolbarAction>
           <ToolbarAction wdKey="nav:code-editor" onClick={() => this.props.onToggleModal("codeEditor")}>
             <MdCode />
-            <IconText>{t("Code Editor")}</IconText>
+            <IconText>{t("Code")}</IconText>
           </ToolbarAction>
           <ToolbarAction wdKey="nav:sources" onClick={() => this.props.onToggleModal("sources")}>
             <MdLayers />
-            <IconText>{t("Data Sources")}</IconText>
+            <IconText>{t("Sources")}</IconText>
           </ToolbarAction>
           <ToolbarAction wdKey="nav:settings" onClick={() => this.props.onToggleModal("settings")}>
             <MdSettings />
-            <IconText>{t("Style Settings")}</IconText>
+            <IconText>{t("Settings")}</IconText>
           </ToolbarAction>
           <ToolbarAction wdKey="nav:global-state" onClick={() => this.props.onToggleModal("globalState")}>
             <MdPublic />
-            <IconText>{t("Global State")}</IconText>
+            <IconText>{t("State")}</IconText>
           </ToolbarAction>
 
           <span className="maputnik-toolbar-divider" />
@@ -340,28 +349,26 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
           </ToolbarSelect>
 
           <ToolbarSelect wdKey="nav:language">
-            <MdLanguage />
-            <IconText>Language
-              <select
-                className="maputnik-select"
-                data-wd-key="maputnik-lang-select"
-                onChange={(e) => this.handleLanguageChange(e.target.value)}
-                value={this.props.i18n.language}
-              >
-                {Object.entries(supportedLanguages).map(([code, name]) => {
-                  return (
-                    <option key={code} value={code}>
-                      {name}
-                    </option>
-                  );
-                })}
-              </select>
-            </IconText>
+            <MdLanguage title={t("Language")} />
+            <select
+              className="maputnik-select"
+              data-wd-key="maputnik-lang-select"
+              aria-label={t("Language")}
+              onChange={(e) => this.handleLanguageChange(e.target.value)}
+              value={this.props.i18n.language}
+            >
+              {Object.entries(supportedLanguages).map(([code, name]) => {
+                return (
+                  <option key={code} value={code}>
+                    {name}
+                  </option>
+                );
+              })}
+            </select>
           </ToolbarSelect>
 
           <ToolbarLink href={"https://github.com/maplibre/maputnik/wiki"}>
-            <MdHelpOutline />
-            <IconText>{t("Help")}</IconText>
+            <MdHelpOutline title={t("Help")} aria-label={t("Help")} />
           </ToolbarLink>
         </div>
       </div>

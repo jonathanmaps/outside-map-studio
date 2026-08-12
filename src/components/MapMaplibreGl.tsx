@@ -88,6 +88,7 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     options: {} as MapOptions,
   };
   container: HTMLDivElement | null = null;
+  map: Map | null = null;
 
   constructor(props: MapMaplibreGlInternalProps) {
     super(props);
@@ -114,7 +115,10 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
   }
 
   componentDidUpdate() {
-    const map = this.state.map;
+    // Use the instance map rather than state.map: state.map is only set once
+    // "style.load" fires, which never happens when sprite/glyph requests fail
+    // (e.g. placeholder API keys), and view jumps must work regardless.
+    const map = this.map;
 
     const styleWithTokens = this.props.replaceAccessTokens(this.props.mapStyle);
     if (map) {
@@ -169,6 +173,7 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     const protocol = new Protocol({metadata: true});
     MapLibreGl.addProtocol("pmtiles",protocol.tile);
     const map = new MapLibreGl.Map(mapOpts);
+    this.map = map;
 
     const mapViewChange = () => {
       const center = map.getCenter();

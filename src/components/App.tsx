@@ -19,7 +19,6 @@ import { LayerEditor } from "./LayerEditor";
 import { AppToolbar, type MapState } from "./AppToolbar";
 import { AppLayout } from "./AppLayout";
 import { AppMessagePanel as MessagePanel } from "./AppMessagePanel";
-import { CoordinateJump } from "./CoordinateJump";
 
 import { ModalSettings } from "./modals/ModalSettings";
 import { ModalExport } from "./modals/ModalExport";
@@ -836,19 +835,11 @@ export class App extends React.Component<any, AppState> {
 
     return <div style={elementStyle} className="maputnik-map__container" data-wd-key="maplibre:container">
       {mapElement}
-      <CoordinateJump
-        coordinates={{
-          zoom: this.state.mapView.zoom,
-          lat: this.state.mapView.center.lat,
-          lng: this.state.mapView.center.lng,
-        }}
-        onJump={this.onCoordinateJump}
-      />
     </div>;
   }
 
   setStateInUrl = () => {
-    const {mapState, mapStyle, isOpen} = this.state;
+    const {mapStyle, isOpen} = this.state;
     const {selectedLayerIndex} = this.state;
     const url = new URL(location.href);
     const hashVal = hash(JSON.stringify(mapStyle));
@@ -865,12 +856,9 @@ export class App extends React.Component<any, AppState> {
       url.searchParams.delete("modal");
     }
 
-    if (mapState === "map") {
-      url.searchParams.delete("view");
-    }
-    else if (mapState === "inspect") {
-      url.searchParams.set("view", "inspect");
-    }
+    // The view (map/inspect) is intentionally NOT persisted in the URL —
+    // reloading should always come back in plain "map" view.
+    url.searchParams.delete("view");
 
     history.replaceState({selectedLayerIndex}, "Maputnik", url.href);
   };
@@ -892,11 +880,6 @@ export class App extends React.Component<any, AppState> {
           ...modalObj,
         }
       });
-    }
-
-    const view = url.searchParams.get("view");
-    if (view && view !== "") {
-      this.setMapState(view as MapState);
     }
 
     const path = url.searchParams.get("layer");
@@ -1021,6 +1004,12 @@ export class App extends React.Component<any, AppState> {
       activeDockPanel={this.state.activeDockPanel}
       onToggleDockPanel={this.toggleDockPanel}
       onOpenCommandPalette={() => this.setState({ commandPaletteOpen: true })}
+      mapCoordinates={{
+        zoom: this.state.mapView.zoom,
+        lat: this.state.mapView.center.lat,
+        lng: this.state.mapView.center.lng,
+      }}
+      onCoordinateJump={this.onCoordinateJump}
     />;
 
     const codeEditor = this.state.isOpen.codeEditor ? <CodeEditor

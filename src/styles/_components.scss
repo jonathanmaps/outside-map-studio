@@ -20,71 +20,66 @@
   }
 }
 
+// Compact coordinate chip that lives in the top toolbar. Click, paste
+// zoom/lat/lng (or a whole URL), Enter to jump. Esc restores.
 .maputnik-coordinate-jump {
-  position: absolute;
-  z-index: 20;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  border: 1px solid rgba(148, 163, 184, 0.34);
-  border-radius: 9px;
-  padding: 6px 7px 6px 10px;
-  color: #cbd5e1;
-  background: rgba(10, 15, 26, 0.92);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(14px);
+  gap: 6px;
+  flex: 0 0 auto;
+  height: 28px;
+  margin: 8px 0;
+  padding: 0 vars.$margin-3;
+  border: 1px solid vars.$color-border;
+  border-radius: vars.$radius-2;
+  color: vars.$color-lowgray;
+  background: vars.$color-gray;
+  transition: border-color vars.$transition-fast;
+
+  &:focus-within {
+    border-color: vars.$color-accent;
+    color: vars.$color-white;
+  }
 
   input {
-    width: 210px;
+    width: 165px;
     border: 0;
     outline: 0;
-    color: #f8fafc;
+    color: vars.$color-white;
     background: transparent;
-    font: inherit;
-    font-size: 12px;
-  }
-
-  button {
-    border: 0;
-    border-radius: 6px;
-    padding: 5px 9px;
-    color: #06110d;
-    background: #63e6be;
-    cursor: pointer;
-    font-weight: 700;
-  }
-
-  span[role="alert"] {
-    position: absolute;
-    top: calc(100% + 5px);
-    left: 0;
-    border-radius: 6px;
-    padding: 5px 8px;
-    color: white;
-    background: #b42345;
+    font-family: vars.$font-family-mono;
     font-size: 11px;
-    white-space: nowrap;
+
+    &::placeholder {
+      color: vars.$color-lowgray;
+    }
   }
 
   &--error {
-    border-color: #ff6688;
+    border-color: vars.$color-red;
+
+    input {
+      color: vars.$color-red;
+    }
   }
 }
 
-@media (max-width: 800px) {
-  .maputnik-coordinate-jump {
-    left: 10px;
-    right: 10px;
-    transform: none;
+// Keep the on-map geocoder (place search) small and out of the way.
+.maplibregl-ctrl-geocoder {
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: 240px !important;
+  font-size: 12px !important;
 
-    input {
-      min-width: 0;
-      width: auto;
-      flex: 1;
-    }
+  .maplibregl-ctrl-geocoder--input {
+    height: 32px !important;
+    font-size: 12px !important;
+  }
+
+  .maplibregl-ctrl-geocoder--icon-search {
+    top: 5px !important;
+    width: 18px !important;
+    height: 18px !important;
   }
 }
 
