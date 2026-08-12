@@ -1,6 +1,7 @@
 ## main
 
 ### ✨ Features and improvements
+- Add coordinate jumping and preserve manually entered map URL hashes on load
 - Add layer search with field filters, temporary map-only layer focus, and resizable editing panels
 - Replace Cypress with Playwright for end-to-end tests and Vitest browser mode (Playwright provider) for component tests; drop the `@shellygo/cypress-test-utils` helper in favour of a `MaputnikDriver` page object
 - _...Add new stuff here..._

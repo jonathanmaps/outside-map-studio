@@ -19,6 +19,7 @@ import { LayerEditor } from "./LayerEditor";
 import { AppToolbar, type MapState } from "./AppToolbar";
 import { AppLayout } from "./AppLayout";
 import { AppMessagePanel as MessagePanel } from "./AppMessagePanel";
+import { CoordinateJump } from "./CoordinateJump";
 
 import { ModalSettings } from "./modals/ModalSettings";
 import { ModalExport } from "./modals/ModalExport";
@@ -51,6 +52,7 @@ import tokens from "../config/tokens.json";
 import isEqual from "lodash.isequal";
 import { type MapOptions } from "maplibre-gl";
 import { type MappedError, type OnStyleChangedOpts, type StyleSpecificationWithId } from "../libs/definitions";
+import {formatMapCoordinates, parseMapCoordinates, type MapCoordinates} from "../libs/mapCoordinates";
 
 // Buffer must be defined globally for @maplibre/maplibre-gl-style-spec validate() function to succeed.
 window.Buffer = buffer.Buffer;
@@ -150,6 +152,8 @@ export class App extends React.Component<any, AppState> {
     this.revisionStore = new RevisionStore();
     this.configureKeyboardShortcuts();
 
+    const urlCoordinates = parseMapCoordinates(window.location.hash, 0);
+
     this.state = {
       errors: [],
       infos: [],
@@ -160,12 +164,13 @@ export class App extends React.Component<any, AppState> {
       vectorLayers: {},
       mapState: "map",
       spec: latest,
-      mapView: {
+      mapView: urlCoordinates ? {
+        zoom: urlCoordinates.zoom,
+        center: {lng: urlCoordinates.lng, lat: urlCoordinates.lat},
+        _from: "app"
+      } : {
         zoom: 0,
-        center: {
-          lng: 0,
-          lat: 0,
-        },
+        center: {lng: 0, lat: 0},
         _from: "app"
       },
       isOpen: {
@@ -314,11 +319,34 @@ export class App extends React.Component<any, AppState> {
   async componentDidMount() {
     this.styleStore = await createStyleStore((mapStyle, opts) => this.onStyleChanged(mapStyle, opts));
     window.addEventListener("keydown", this.handleKeyPress);
+    window.addEventListener("hashchange", this.onLocationHashChange);
   }
 
   componentWillUnmount() {
     window.removeEventListener("keydown", this.handleKeyPress);
+    window.removeEventListener("hashchange", this.onLocationHashChange);
   }
+
+  onCoordinateJump = (coordinates: MapCoordinates) => {
+    const url = new URL(window.location.href);
+    url.hash = formatMapCoordinates(coordinates);
+    history.replaceState(history.state, "Maputnik", url.href);
+    this.setState({
+      mapView: {
+        zoom: coordinates.zoom,
+        center: {lng: coordinates.lng, lat: coordinates.lat},
+        _from: "app",
+      }
+    });
+  };
+
+  onLocationHashChange = () => {
+    const coordinates = parseMapCoordinates(window.location.hash, this.state.mapView.zoom);
+    if (!coordinates) return;
+    const {mapView} = this.state;
+    if (coordinates.zoom === mapView.zoom && coordinates.lat === mapView.center.lat && coordinates.lng === mapView.center.lng) return;
+    this.onCoordinateJump(coordinates);
+  };
 
   saveStyle(snapshotStyle: StyleSpecificationWithId) {
     this.styleStore?.save(snapshotStyle);
@@ -511,11 +539,16 @@ export class App extends React.Component<any, AppState> {
 
     const zoom = newStyle?.zoom;
     const center = newStyle?.center;
+    const urlCoordinates = isEmptyStyle ? parseMapCoordinates(window.location.hash, zoom || 0) : null;
 
     this.setState({
       mapStyle: newStyle,
       dirtyMapStyle: dirtyMapStyle,
-      mapView: isEmptyStyle && zoom && center ? {
+      mapView: urlCoordinates ? {
+        zoom: urlCoordinates.zoom,
+        center: {lng: urlCoordinates.lng, lat: urlCoordinates.lat},
+        _from: "app"
+      } : isEmptyStyle && zoom && center ? {
         zoom: zoom,
         center: {
           lng: center[0],
@@ -803,6 +836,14 @@ export class App extends React.Component<any, AppState> {
 
     return <div style={elementStyle} className="maputnik-map__container" data-wd-key="maplibre:container">
       {mapElement}
+      <CoordinateJump
+        coordinates={{
+          zoom: this.state.mapView.zoom,
+          lat: this.state.mapView.center.lat,
+          lng: this.state.mapView.center.lng,
+        }}
+        onJump={this.onCoordinateJump}
+      />
     </div>;
   }
 
