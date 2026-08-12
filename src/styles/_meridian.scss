@@ -1,0 +1,683 @@
+@use "vars";
+
+// ============================================================
+// MERIDIAN — shared surface system for the new panels:
+// Command Palette, AI Copilot, Timeline, Workspace.
+// ============================================================
+
+@mixin glass-surface {
+  background-color: rgba(19, 20, 25, 0.88);
+  backdrop-filter: blur(vars.$blur-glass);
+  -webkit-backdrop-filter: blur(vars.$blur-glass);
+}
+
+.meridian-dock-toggles {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: vars.$margin-2;
+}
+
+// ---- Floating right-hand dock (Copilot / Timeline / Workspace) ----
+.meridian-dock {
+  position: fixed;
+  top: calc(#{vars.$toolbar-height} + #{vars.$toolbar-offset + 0px} + 10px);
+  right: 10px;
+  bottom: 10px;
+  width: 360px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  @include glass-surface;
+  border: 1px solid vars.$color-border;
+  border-radius: vars.$radius-3;
+  box-shadow: vars.$shadow-panel;
+  overflow: hidden;
+  animation: meridian-dock-in vars.$transition-med;
+}
+
+@keyframes meridian-dock-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.meridian-panel-header {
+  display: flex;
+  align-items: center;
+  gap: vars.$margin-2;
+  padding: vars.$margin-3 vars.$margin-3;
+  border-bottom: 1px solid vars.$color-border;
+  flex: 0 0 auto;
+
+  h2 {
+    font-size: vars.$font-size-5;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: vars.$margin-2;
+  }
+
+  .meridian-panel-icon {
+    display: inline-flex;
+    color: vars.$color-accent;
+  }
+
+  &--ai .meridian-panel-icon {
+    color: vars.$color-ai-strong;
+  }
+}
+
+.meridian-panel-close {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: vars.$radius-1;
+  color: vars.$color-lowgray;
+  transition: background-color vars.$transition-fast, color vars.$transition-fast;
+
+  &:hover {
+    background-color: vars.$color-midgray;
+    color: vars.$color-white;
+  }
+}
+
+.meridian-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: vars.$margin-3;
+}
+
+.meridian-panel-subtitle {
+  font-size: vars.$font-size-6;
+  color: vars.$color-lowgray;
+  line-height: 1.5;
+  margin: 0 0 vars.$margin-3;
+}
+
+// ---- Buttons / chips ----
+.meridian-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: vars.$font-size-6;
+  font-weight: 500;
+  padding: 7px 12px;
+  border-radius: vars.$radius-2;
+  border: 1px solid vars.$color-border;
+  color: vars.$color-white;
+  background-color: vars.$color-midgray;
+  transition: border-color vars.$transition-fast, background-color vars.$transition-fast, color vars.$transition-fast;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: vars.$color-border-strong;
+    background-color: color-mix(in srgb, vars.$color-midgray 80%, white 6%);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &--accent {
+    background-color: vars.$color-accent-dim;
+    border-color: rgba(217, 154, 91, 0.35);
+    color: vars.$color-accent-strong;
+
+    &:hover {
+      border-color: vars.$color-accent-strong;
+    }
+  }
+
+  &--ai {
+    background-color: vars.$color-ai-dim;
+    border-color: rgba(156, 144, 255, 0.35);
+    color: vars.$color-ai-strong;
+
+    &:hover {
+      border-color: vars.$color-ai-strong;
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    border-color: transparent;
+    color: vars.$color-lowgray;
+
+    &:hover {
+      background-color: vars.$color-midgray;
+      color: vars.$color-white;
+    }
+  }
+
+  &--danger:hover {
+    border-color: vars.$color-red;
+    color: vars.$color-red;
+  }
+
+  &--sm {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  &--block {
+    width: 100%;
+  }
+}
+
+.meridian-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meridian-chip {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid vars.$color-border;
+  color: vars.$color-lowgray;
+  background: vars.$color-gray;
+  transition: all vars.$transition-fast;
+
+  &:hover {
+    color: vars.$color-white;
+    border-color: vars.$color-border-strong;
+  }
+
+  &--active {
+    color: vars.$color-ai-strong;
+    border-color: rgba(156, 144, 255, 0.4);
+    background: vars.$color-ai-dim;
+  }
+}
+
+// ---- Section blocks ----
+.meridian-section {
+  margin-bottom: vars.$margin-4;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.meridian-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: vars.$color-lowgray;
+  margin-bottom: vars.$margin-2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// ---- Swatches ----
+.meridian-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: vars.$radius-1;
+  border: 1px solid vars.$color-border-strong;
+  flex: 0 0 auto;
+  display: inline-block;
+}
+
+.meridian-swatch-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meridian-swatch-arrow {
+  color: vars.$color-lowgray;
+  font-size: 10px;
+}
+
+// ---- Prompt input (AI Copilot) ----
+.meridian-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$margin-2;
+  margin-bottom: vars.$margin-4;
+}
+
+.meridian-prompt-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.meridian-prompt-input {
+  flex: 1;
+  background: vars.$color-gray;
+  border: 1px solid vars.$color-border;
+  border-radius: vars.$radius-2;
+  color: vars.$color-white;
+  font-size: vars.$font-size-6;
+  padding: 9px 11px;
+  font-family: vars.$font-family;
+  transition: border-color vars.$transition-fast;
+
+  &::placeholder {
+    color: vars.$color-lowgray;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: vars.$color-ai-strong;
+  }
+}
+
+// ---- Findings / cards ----
+.meridian-card {
+  border: 1px solid vars.$color-border;
+  border-radius: vars.$radius-2;
+  background: vars.$color-gray;
+  padding: vars.$margin-3;
+  margin-bottom: vars.$margin-2;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.meridian-card-row {
+  display: flex;
+  align-items: center;
+  gap: vars.$margin-2;
+}
+
+.meridian-card-title {
+  font-size: vars.$font-size-6;
+  font-weight: 600;
+  color: vars.$color-white;
+  flex: 1;
+}
+
+.meridian-card-meta {
+  font-size: 11px;
+  color: vars.$color-lowgray;
+  margin-top: 2px;
+  font-family: vars.$font-family-mono;
+}
+
+.meridian-card-body {
+  font-size: 11px;
+  color: vars.$color-lowgray;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+.meridian-empty {
+  text-align: center;
+  padding: vars.$margin-5 vars.$margin-3;
+  color: vars.$color-lowgray;
+  font-size: vars.$font-size-6;
+  line-height: 1.6;
+}
+
+// ---- Log entries (Copilot activity) ----
+.meridian-log-entry {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid vars.$color-border;
+  font-size: 11px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.meridian-log-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: vars.$color-ai-strong;
+  margin-top: 5px;
+  flex: 0 0 auto;
+}
+
+.meridian-log-text {
+  flex: 1;
+  color: vars.$color-white;
+  line-height: 1.5;
+}
+
+.meridian-log-time {
+  color: vars.$color-lowgray;
+  font-family: vars.$font-family-mono;
+  font-size: 10px;
+}
+
+// ============================================================
+// Command palette
+// ============================================================
+.meridian-cmdk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(6, 6, 8, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  animation: meridian-fade-in vars.$transition-fast;
+}
+
+@keyframes meridian-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.meridian-cmdk {
+  width: 560px;
+  max-width: 90vw;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  @include glass-surface;
+  border: 1px solid vars.$color-border-strong;
+  border-radius: vars.$radius-3;
+  box-shadow: vars.$shadow-panel;
+  overflow: hidden;
+  animation: meridian-cmdk-in vars.$transition-med;
+}
+
+@keyframes meridian-cmdk-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.meridian-cmdk-input-row {
+  display: flex;
+  align-items: center;
+  gap: vars.$margin-2;
+  padding: vars.$margin-3 vars.$margin-3;
+  border-bottom: 1px solid vars.$color-border;
+  color: vars.$color-lowgray;
+}
+
+.meridian-cmdk-input {
+  all: unset;
+  flex: 1;
+  color: vars.$color-white;
+  font-size: vars.$font-size-4;
+
+  &::placeholder {
+    color: vars.$color-lowgray;
+  }
+}
+
+.meridian-cmdk-list {
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.meridian-cmdk-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: vars.$color-lowgray;
+  padding: 8px 10px 4px;
+}
+
+.meridian-cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: vars.$radius-2;
+  cursor: pointer;
+  color: vars.$color-white;
+  font-size: vars.$font-size-6;
+
+  .meridian-cmdk-item-icon {
+    display: inline-flex;
+    color: vars.$color-lowgray;
+    flex: 0 0 auto;
+  }
+
+  .meridian-cmdk-item-label {
+    flex: 1;
+  }
+
+  .meridian-cmdk-item-hint {
+    color: vars.$color-lowgray;
+    font-size: 11px;
+    font-family: vars.$font-family-mono;
+  }
+
+  &--active {
+    background-color: vars.$color-accent-dim;
+
+    .meridian-cmdk-item-icon {
+      color: vars.$color-accent-strong;
+    }
+  }
+}
+
+.meridian-cmdk-empty {
+  padding: vars.$margin-5 vars.$margin-3;
+  text-align: center;
+  color: vars.$color-lowgray;
+  font-size: vars.$font-size-6;
+}
+
+// ============================================================
+// Timeline
+// ============================================================
+.meridian-timeline {
+  position: relative;
+  padding-left: 16px;
+}
+
+.meridian-timeline::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: vars.$color-border-strong;
+}
+
+.meridian-timeline-entry {
+  position: relative;
+  padding-bottom: vars.$margin-4;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.meridian-timeline-dot {
+  position: absolute;
+  left: -16px;
+  top: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: vars.$color-black;
+  border: 2px solid vars.$color-accent;
+
+  &--current {
+    background: vars.$color-accent;
+  }
+}
+
+.meridian-timeline-select {
+  cursor: pointer;
+  accent-color: vars.$color-ai-strong;
+  margin-right: 6px;
+}
+
+.meridian-diff-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 11px;
+  border-bottom: 1px solid vars.$color-border;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.meridian-diff-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex: 0 0 auto;
+
+  &--add {
+    background: rgba(111, 207, 151, 0.16);
+    color: vars.$color-green;
+  }
+
+  &--remove {
+    background: rgba(224, 118, 110, 0.16);
+    color: vars.$color-red;
+  }
+
+  &--change {
+    background: vars.$color-accent-dim;
+    color: vars.$color-accent-strong;
+  }
+}
+
+.meridian-diff-text {
+  flex: 1;
+  color: vars.$color-white;
+  font-family: vars.$font-family-mono;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+// ============================================================
+// Workspace
+// ============================================================
+.meridian-workspace-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px;
+  border-radius: vars.$radius-2;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color vars.$transition-fast, border-color vars.$transition-fast;
+
+  &:hover {
+    background-color: vars.$color-midgray;
+  }
+
+  &--active {
+    border-color: rgba(217, 154, 91, 0.35);
+    background-color: vars.$color-accent-dim;
+  }
+}
+
+.meridian-workspace-swatches {
+  display: flex;
+  flex: 0 0 auto;
+  border-radius: vars.$radius-1;
+  overflow: hidden;
+  width: 36px;
+  height: 36px;
+  border: 1px solid vars.$color-border-strong;
+}
+
+.meridian-workspace-swatches span {
+  flex: 1;
+}
+
+.meridian-workspace-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.meridian-workspace-name {
+  font-size: vars.$font-size-6;
+  font-weight: 500;
+  color: vars.$color-white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meridian-workspace-meta {
+  font-size: 11px;
+  color: vars.$color-lowgray;
+  font-family: vars.$font-family-mono;
+}
+
+.meridian-workspace-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity vars.$transition-fast;
+}
+
+.meridian-workspace-item:hover .meridian-workspace-actions {
+  opacity: 1;
+}
+
+.meridian-icon-btn {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: vars.$radius-1;
+  color: vars.$color-lowgray;
+
+  &:hover {
+    background: vars.$color-black;
+    color: vars.$color-white;
+  }
+}
+
+.meridian-pin {
+  color: vars.$color-lowgray;
+
+  &--active {
+    color: vars.$color-accent-strong;
+  }
+}

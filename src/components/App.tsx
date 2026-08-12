@@ -28,12 +28,24 @@ import { ModalShortcuts } from "./modals/ModalShortcuts";
 import { ModalDebug } from "./modals/ModalDebug";
 import { ModalGlobalState } from "./modals/ModalGlobalState";
 
+import { CommandPalette, type Command } from "./CommandPalette";
+import { AICopilotPanel } from "./AICopilotPanel";
+import { TimelinePanel } from "./TimelinePanel";
+import { WorkspacePanel } from "./WorkspacePanel";
+import type { DockPanelType } from "./DockPanel";
+import {
+  MdOpenInBrowser, MdSave, MdCode, MdLayers, MdSettings, MdPublic,
+  MdMap, MdFindInPage, MdAutoAwesome, MdHistory, MdFolderOpen,
+  MdUndo, MdRedo, MdKeyboard,
+} from "react-icons/md";
+
 import {downloadGlyphsMetadata, downloadSpriteMetadata} from "../libs/metadata";
 import { emptyStyle, getAccessToken, replaceAccessTokens } from "../libs/style";
 import { undoMessages, redoMessages } from "../libs/diffmessage";
 import { createStyleStore, type IStyleStore } from "../libs/store/style-store-factory";
 import { RevisionStore } from "../libs/revisions";
 import { LayerWatcher } from "../libs/layerwatcher";
+import { touchWorkspaceMeta } from "../libs/workspace";
 import tokens from "../config/tokens.json";
 import isEqual from "lodash.isequal";
 import { type MapOptions } from "maplibre-gl";
@@ -122,6 +134,8 @@ type AppState = {
     codeEditor: boolean
   }
   fileHandle: FileSystemFileHandle | null
+  activeDockPanel: DockPanelType
+  commandPaletteOpen: boolean
 };
 
 export class App extends React.Component<any, AppState> {
@@ -172,6 +186,8 @@ export class App extends React.Component<any, AppState> {
         debugToolbox: false,
       },
       fileHandle: null,
+      activeDockPanel: null,
+      commandPaletteOpen: false,
     };
 
     this.layerWatcher = new LayerWatcher({
@@ -258,6 +274,14 @@ export class App extends React.Component<any, AppState> {
   };
 
   handleKeyPress = (e: KeyboardEvent) => {
+    const cmdOrCtrl = navigator.platform.toUpperCase().indexOf("MAC") >= 0 ? e.metaKey : e.ctrlKey;
+
+    if (cmdOrCtrl && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      this.setState(state => ({ commandPaletteOpen: !state.commandPaletteOpen }));
+      return;
+    }
+
     if(navigator.platform.toUpperCase().indexOf("MAC") >= 0) {
       if(e.metaKey && e.shiftKey && e.keyCode === 90) {
         e.preventDefault();
@@ -280,6 +304,12 @@ export class App extends React.Component<any, AppState> {
     }
   };
 
+  toggleDockPanel = (panel: Exclude<DockPanelType, null>) => {
+    this.setState(state => ({ activeDockPanel: state.activeDockPanel === panel ? null : panel }));
+  };
+
+  closeDockPanel = () => this.setState({ activeDockPanel: null });
+
   async componentDidMount() {
     this.styleStore = await createStyleStore((mapStyle, opts) => this.onStyleChanged(mapStyle, opts));
     window.addEventListener("keydown", this.handleKeyPress);
@@ -291,6 +321,7 @@ export class App extends React.Component<any, AppState> {
 
   saveStyle(snapshotStyle: StyleSpecificationWithId) {
     this.styleStore?.save(snapshotStyle);
+    touchWorkspaceMeta(snapshotStyle.id);
   }
 
   updateFonts(urlTemplate: string) {
@@ -897,6 +928,40 @@ export class App extends React.Component<any, AppState> {
     });
   };
 
+  buildCommands(): Command[] {
+    const layers = this.state.mapStyle.layers || [];
+
+    const commands: Command[] = [
+      { id: "open", label: "Open a style", group: "File", icon: <MdOpenInBrowser />, hint: "O", action: () => this.setModal("open", true) },
+      { id: "save", label: "Save / Export", group: "File", icon: <MdSave />, hint: "E", action: () => this.setModal("export", true) },
+      { id: "code-editor", label: "Toggle code editor", group: "File", icon: <MdCode />, action: () => this.toggleModal("codeEditor") },
+      { id: "sources", label: "Data sources", group: "Style", icon: <MdLayers />, hint: "D", action: () => this.setModal("sources", true) },
+      { id: "settings", label: "Style settings", group: "Style", icon: <MdSettings />, hint: "S", action: () => this.setModal("settings", true) },
+      { id: "global-state", label: "Global state", group: "Style", icon: <MdPublic />, hint: "G", action: () => this.setModal("globalState", true) },
+      { id: "view-map", label: "Map view", group: "View", icon: <MdMap />, action: () => this.setMapState("map") },
+      { id: "view-inspect", label: "Inspect view", group: "View", icon: <MdFindInPage />, hint: "I", action: () => this.setMapState("inspect") },
+      { id: "undo", label: "Undo", group: "Edit", icon: <MdUndo />, hint: "⌘Z", action: this.onUndo },
+      { id: "redo", label: "Redo", group: "Edit", icon: <MdRedo />, hint: "⌘⇧Z", action: this.onRedo },
+      { id: "shortcuts", label: "Keyboard shortcuts", group: "Help", icon: <MdKeyboard />, hint: "?", action: () => this.setModal("shortcuts", true) },
+      { id: "copilot", label: "Open Copilot", group: "Meridian", icon: <MdAutoAwesome />, keywords: "ai intelligence assistant", action: () => this.toggleDockPanel("ai") },
+      { id: "timeline", label: "Open Timeline", group: "Meridian", icon: <MdHistory />, keywords: "history checkpoint version snapshot compare", action: () => this.toggleDockPanel("timeline") },
+      { id: "workspace", label: "Open Workspace", group: "Meridian", icon: <MdFolderOpen />, keywords: "files projects manage switch", action: () => this.toggleDockPanel("workspace") },
+    ];
+
+    layers.forEach((layer, index) => {
+      commands.push({
+        id: `layer-${layer.id}-${index}`,
+        label: layer.id || `Layer ${index}`,
+        group: "Jump to layer",
+        icon: <MdLayers />,
+        hint: layer.type,
+        action: () => this.onLayerSelect(index),
+      });
+    });
+
+    return commands;
+  }
+
   render() {
     const layers = this.state.mapStyle.layers || [];
     const selectedLayer = layers.length > 0 ? layers[this.state.selectedLayerIndex] : undefined;
@@ -911,6 +976,9 @@ export class App extends React.Component<any, AppState> {
       onStyleOpen={this.onStyleChanged}
       onSetMapState={this.setMapState}
       onToggleModal={(modal: keyof AppState["isOpen"]) => this.toggleModal(modal)}
+      activeDockPanel={this.state.activeDockPanel}
+      onToggleDockPanel={this.toggleDockPanel}
+      onOpenCommandPalette={() => this.setState({ commandPaletteOpen: true })}
     />;
 
     const codeEditor = this.state.isOpen.codeEditor ? <CodeEditor
@@ -1010,6 +1078,29 @@ export class App extends React.Component<any, AppState> {
         isOpen={this.state.isOpen.globalState}
         onOpenToggle={() => this.toggleModal("globalState")}
       />
+
+      <CommandPalette
+        isOpen={this.state.commandPaletteOpen}
+        commands={this.buildCommands()}
+        onClose={() => this.setState({ commandPaletteOpen: false })}
+      />
+
+      {this.state.activeDockPanel === "ai" && <AICopilotPanel
+        mapStyle={this.state.mapStyle}
+        onStyleChanged={this.onStyleChanged}
+        onUndo={this.onUndo}
+        onClose={this.closeDockPanel}
+      />}
+      {this.state.activeDockPanel === "timeline" && <TimelinePanel
+        mapStyle={this.state.mapStyle}
+        onStyleChanged={this.onStyleChanged}
+        onClose={this.closeDockPanel}
+      />}
+      {this.state.activeDockPanel === "workspace" && <WorkspacePanel
+        currentStyleId={this.state.mapStyle.id}
+        onOpenStyle={(style) => this.openStyle(style, null)}
+        onClose={this.closeDockPanel}
+      />}
     </div>;
 
     return <AppLayout

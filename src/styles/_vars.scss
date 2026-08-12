@@ -1,10 +1,28 @@
-$color-black: #191b20;
-$color-gray: #222429;
-$color-midgray: #303237;
-$color-lowgray: #a4a4a4;
-$color-white: #f0f0f0;
-$color-red: #cf4a4a;
-$color-green: #53b972;
+// MERIDIAN — refined instrument-panel palette.
+// Graphite surfaces, warm paper-white text, one restrained signal color.
+// The map is the hero; chrome stays quiet.
+$color-black: #0b0c0f;
+$color-gray: #131419;
+$color-midgray: #1e2027;
+$color-lowgray: #8b8d97;
+$color-white: #f2f1ec;
+$color-red: #e0766e;
+$color-green: #6fcf97;
+
+// Signal accents — used sparingly for actions/active state.
+$color-accent: #d99a5b;
+$color-accent-strong: #eab27a;
+$color-accent-dim: rgba(217, 154, 91, 0.16);
+
+// A distinct, equally restrained accent for on-device intelligence surfaces
+// so Copilot reads as its own place, not a gimmick.
+$color-ai: #9c90ff;
+$color-ai-strong: #b6adff;
+$color-ai-dim: rgba(156, 144, 255, 0.14);
+
+$color-border: rgba(242, 241, 236, 0.08);
+$color-border-strong: rgba(242, 241, 236, 0.16);
+
 $margin-1: 3px;
 $margin-2: 5px;
 $margin-3: 10px;
@@ -16,9 +34,21 @@ $font-size-3: 18px;
 $font-size-4: 16px;
 $font-size-5: 14px;
 $font-size-6: 12px;
-$font-family: Roboto, sans-serif;
+$font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+$font-family-mono: ui-monospace, "SF Mono", Menlo, "Cascadia Code", monospace;
 
-$toolbar-height: 40px;
+$radius-1: 4px;
+$radius-2: 8px;
+$radius-3: 16px;
+
+$shadow-panel: 0 20px 60px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+$shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.35);
+$blur-glass: 24px;
+
+$transition-fast: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+$transition-med: 240ms cubic-bezier(0.16, 1, 0.3, 1);
+
+$toolbar-height: 44px;
 $toolbar-offset: 0;
 
 $layout-list-width: 200px;

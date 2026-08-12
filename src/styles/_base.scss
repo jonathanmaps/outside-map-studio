@@ -1,25 +1,12 @@
 @use "vars";
 
-@font-face {
-  font-family: 'Roboto';
-  src: url('../fonts/Roboto-Regular.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Roboto';
-  src: url('../fonts/Roboto-Medium.ttf') format('truetype');
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
-}
-
 html {
   color: vars.$color-white;
   font-size: vars.$font-size-5;
+  font-family: vars.$font-family;
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -31,6 +18,11 @@ body {
 *::before,
 *::after {
   box-sizing: inherit;
+}
+
+::selection {
+  background-color: vars.$color-accent-dim;
+  color: vars.$color-white;
 }
 
 p {
@@ -64,14 +56,15 @@ h4 {
   margin-bottom: vars.$margin-3;
 }
 
-input:focus,
-textarea:focus,
-*[role="button"]:focus,
-button:focus,
-.maputnik-toolbar-link:focus,
-select:focus {
+input:focus-visible,
+textarea:focus-visible,
+*[role="button"]:focus-visible,
+button:focus-visible,
+.maputnik-toolbar-link:focus-visible,
+select:focus-visible {
   color: vars.$color-white;
-  outline: #8e8e8e auto 1px;
+  outline: vars.$color-accent solid 1px;
+  outline-offset: 1px;
 }
 
 label:hover {

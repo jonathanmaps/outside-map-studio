@@ -11,20 +11,33 @@ import {
   MdLanguage,
   MdSave,
   MdPublic,
-  MdCode
+  MdCode,
+  MdSearch,
+  MdAutoAwesome,
+  MdHistory,
+  MdFolderOpen
 } from "react-icons/md";
 import pkgJson from "../../package.json";
-//@ts-ignore
-import maputnikLogo from "maputnik-design/logos/logo-color.svg?inline";
 import { withTranslation, type WithTranslation } from "react-i18next";
 import { supportedLanguages } from "../i18n";
 import type { OnStyleChangedCallback } from "../libs/definitions";
+import type { DockPanelType } from "./DockPanel";
 
 // This is required because of <https://stackoverflow.com/a/49846426>, there isn't another way to detect support that I'm aware of.
 const browser = detect();
 const colorAccessibilityFiltersEnabled = ["chrome", "firefox"].indexOf(browser!.name) > -1;
 
 export type ModalTypes = "settings" | "sources" | "open" | "shortcuts" | "export" | "debug" | "globalState" | "codeEditor";
+
+const APP_NAME = "Meridian";
+
+const MeridianMark = () => (
+  <svg className="maputnik-toolbar-mark" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="9.25" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M3 12H21" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M12 2.75C15.25 6 15.25 18 12 21.25C8.75 18 8.75 6 12 2.75Z" stroke="currentColor" strokeWidth="1.4" />
+  </svg>
+);
 
 type IconTextProps = {
   children?: React.ReactNode
@@ -106,6 +119,9 @@ type AppToolbarInternalProps = {
   onSetMapState(mapState: MapState): unknown
   mapState?: MapState
   renderer?: string
+  activeDockPanel?: DockPanelType
+  onToggleDockPanel(panel: Exclude<DockPanelType, null>): void
+  onOpenCommandPalette(): void
 } & WithTranslation;
 
 class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
@@ -213,14 +229,28 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             target="blank"
             rel="noreferrer noopener"
             href="https://github.com/maplibre/maputnik"
+            title={t("Forked from Maputnik")}
           >
-            <img src={maputnikLogo} alt={t("Maputnik on GitHub")} />
+            <MeridianMark />
             <h1>
-              <span className="maputnik-toolbar-name">{pkgJson.name}</span>
-              <span className="maputnik-toolbar-version">v{pkgJson.version}</span>
+              <span className="maputnik-toolbar-name">{APP_NAME}</span>
+              <span className="maputnik-toolbar-version">{pkgJson.version}</span>
             </h1>
           </a>
         </div>
+
+        <button
+          className="maputnik-toolbar-search"
+          data-wd-key="nav:command-palette"
+          onClick={this.props.onOpenCommandPalette}
+          aria-label={t("Open command palette")}
+        >
+          <MdSearch />
+          <IconText>{t("Jump to anything")}</IconText>
+          <span className="maputnik-space" />
+          <kbd>⌘K</kbd>
+        </button>
+
         <div className="maputnik-toolbar__actions" role="navigation" aria-label="Toolbar">
           <ToolbarAction wdKey="nav:open" onClick={() => this.props.onToggleModal("open")}>
             <MdOpenInBrowser />
@@ -246,6 +276,39 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             <MdPublic />
             <IconText>{t("Global State")}</IconText>
           </ToolbarAction>
+
+          <span className="maputnik-toolbar-divider" />
+
+          <button
+            className={classnames("maputnik-toolbar-action", "maputnik-toolbar-action--ai", {
+              "maputnik-toolbar-action--active": this.props.activeDockPanel === "ai"
+            })}
+            data-wd-key="nav:ai-copilot"
+            onClick={() => this.props.onToggleDockPanel("ai")}
+          >
+            <MdAutoAwesome />
+            <IconText>{t("Copilot")}</IconText>
+          </button>
+          <button
+            className={classnames("maputnik-toolbar-action", {
+              "maputnik-toolbar-action--active": this.props.activeDockPanel === "timeline"
+            })}
+            data-wd-key="nav:timeline"
+            onClick={() => this.props.onToggleDockPanel("timeline")}
+          >
+            <MdHistory />
+            <IconText>{t("Timeline")}</IconText>
+          </button>
+          <button
+            className={classnames("maputnik-toolbar-action", {
+              "maputnik-toolbar-action--active": this.props.activeDockPanel === "workspace"
+            })}
+            data-wd-key="nav:workspace"
+            onClick={() => this.props.onToggleDockPanel("workspace")}
+          >
+            <MdFolderOpen />
+            <IconText>{t("Workspace")}</IconText>
+          </button>
 
           <ToolbarSelect wdKey="nav:inspect">
             <MdFindInPage />
