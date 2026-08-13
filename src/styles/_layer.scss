@@ -174,10 +174,14 @@
     }
   }
 
+  // Hover is a quiet lift. It must stay clearly weaker than the selected
+  // state below, or hovering an unselected row reads as the selection.
+  .maputnik-layer-list-item:hover {
+    background-color: vars.$color-gray;
+  }
+
   .maputnik-layer-list-item:hover,
   .maputnik-layer-list-item-selected {
-    background-color: color.adjust(vars.$color-black, $lightness: 2%);
-
     .maputnik-layer-list-icon-action {
       display: block;
 
@@ -192,8 +196,23 @@
     color: vars.$color-red;
   }
 
-  &-item-selected {
+  // Selected row: accent wash plus a solid accent bar down the leading
+  // edge. The previous 2%-lightness bump on near-black was invisible.
+  &-item-selected,
+  &-item-selected:hover {
+    background-color: vars.$color-accent-dim;
     color: vars.$color-white;
+    font-weight: 500;
+    box-shadow: inset 2px 0 0 vars.$color-accent;
+
+    .maputnik-layer-list-icon-action svg {
+      fill: vars.$color-white;
+    }
+  }
+
+  [dir="rtl"] &-item-selected,
+  [dir="rtl"] &-item-selected:hover {
+    box-shadow: inset -2px 0 0 vars.$color-accent;
   }
 
   &-item-collapsed {
@@ -330,16 +349,24 @@
   .maputnik-multibutton .maputnik-button {
     background-color: color.adjust(vars.$color-midgray, $lightness: -10%);
     color: color.adjust(vars.$color-lowgray, $lightness: -20%);
+    transition: background-color vars.$transition-fast, color vars.$transition-fast;
 
+    // Hovering an unselected option may never outrank the selected one,
+    // so this stays a muted lift rather than the old near-white.
     &:hover {
-      background-color: color.adjust(vars.$color-midgray, $lightness: 12%);
+      background-color: color.adjust(vars.$color-midgray, $lightness: 6%);
       color: vars.$color-white;
     }
   }
 
-  .maputnik-multibutton .maputnik-button-selected {
-    background-color: color.adjust(vars.$color-midgray, $lightness: -2%);
-    color: vars.$color-lowgray;
+  // Selected option carries the accent so it reads as "on" at a glance.
+  // Previously it sat 8% lighter than unselected — effectively invisible,
+  // and dimmer than the hover state.
+  .maputnik-multibutton .maputnik-button-selected,
+  .maputnik-multibutton .maputnik-button-selected:hover {
+    background-color: vars.$color-accent;
+    color: vars.$color-black;
+    font-weight: 600;
   }
 }
 

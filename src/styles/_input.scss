@@ -124,8 +124,22 @@
 }
 
 .maputnik-button-selected {
-  background-color: color.adjust(vars.$color-midgray, $lightness: 12%);
-  color: white;
+  background-color: vars.$color-accent;
+  color: vars.$color-black;
+  font-weight: 600;
+}
+
+// Emphasised action (e.g. "Add Layer"). Outlined rather than filled so a
+// solid accent fill keeps meaning "this option is selected".
+.maputnik-button-primary {
+  background-color: transparent;
+  border: 1px solid rgba(217, 154, 91, 0.5);
+  color: vars.$color-accent-strong;
+
+  &:hover {
+    background-color: vars.$color-accent-dim;
+    border-color: vars.$color-accent;
+  }
 }
 
 // CHECKBOX

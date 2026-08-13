@@ -367,7 +367,7 @@ class LayerListContainerInternal extends React.Component<LayerListContainerInter
             <button
               onClick={this.toggleModal.bind(this, "add")}
               data-wd-key="layer-list:add-layer"
-              className="maputnik-button maputnik-button-selected">
+              className="maputnik-button maputnik-button-primary">
               {t("Add Layer")}
             </button>
           </div>
