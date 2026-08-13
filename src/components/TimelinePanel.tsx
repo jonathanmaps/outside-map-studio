@@ -17,8 +17,12 @@ type TimelinePanelProps = {
 type TimelinePanelState = {
   snapshots: Snapshot[]
   savingLabel: string | null
+  /** Style to hand back when leaving a preview. Null when not previewing. */
   previewingFrom: StyleSpecificationWithId | null
-  previewingId: string | null
+  /** Checkpoint whose content is currently on the map — set by both
+   * preview and restore, and re-verified on render against the live
+   * style so an edit drops the marker rather than leaving it stale. */
+  viewingId: string | null
   compareSelection: string[]
 };
 
@@ -38,7 +42,7 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
     snapshots: listSnapshots(this.props.mapStyle.id),
     savingLabel: null,
     previewingFrom: null,
-    previewingId: null,
+    viewingId: null,
     compareSelection: [],
   };
 
@@ -56,24 +60,29 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
 
   preview = (snapshot: Snapshot) => {
     const from = this.state.previewingFrom ?? this.props.mapStyle;
-    this.setState({ previewingFrom: from, previewingId: snapshot.id });
+    this.setState({ previewingFrom: from, viewingId: snapshot.id });
     this.props.onStyleChanged(snapshot.style, { save: false, addRevision: false });
   };
 
   returnToCurrent = () => {
     if (!this.state.previewingFrom) return;
     this.props.onStyleChanged(this.state.previewingFrom, { save: false, addRevision: false });
-    this.setState({ previewingFrom: null, previewingId: null });
+    this.setState({ previewingFrom: null, viewingId: null });
   };
 
   restore = (snapshot: Snapshot) => {
     this.props.onStyleChanged(snapshot.style);
-    this.setState({ previewingFrom: null, previewingId: null });
+    // Restoring ends the preview, but the map now *is* this checkpoint,
+    // so it stays marked as the one being viewed.
+    this.setState({ previewingFrom: null, viewingId: snapshot.id });
   };
 
   remove = (snapshot: Snapshot) => {
     deleteSnapshot(this.props.mapStyle.id, snapshot.id);
-    this.setState({ compareSelection: this.state.compareSelection.filter(id => id !== snapshot.id) }, this.refresh);
+    this.setState(state => ({
+      compareSelection: state.compareSelection.filter(id => id !== snapshot.id),
+      viewingId: state.viewingId === snapshot.id ? null : state.viewingId,
+    }), this.refresh);
   };
 
   toggleCompare = (id: string) => {
@@ -86,7 +95,7 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
   };
 
   render() {
-    const { snapshots, previewingId, compareSelection } = this.state;
+    const { snapshots, compareSelection, previewingFrom } = this.state;
     const compareEntries = compareSelection.length === 2
       ? snapshots.filter(s => compareSelection.includes(s.id)).sort((a, b) => a.createdAt - b.createdAt)
       : null;
@@ -94,16 +103,30 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
       ? diffStyles(compareEntries[0].style, compareEntries[1].style)
       : null;
 
+    // Only claim a checkpoint is on screen if the live style still matches
+    // it — one semantic diff against the single candidate, so editing after
+    // a restore clears the marker instead of leaving it lying.
+    const candidate = snapshots.find(s => s.id === this.state.viewingId);
+    const viewingId = candidate && diffStyles(candidate.style, this.props.mapStyle).length === 0
+      ? candidate.id
+      : null;
+    const viewingLabel = viewingId ? candidate!.label : null;
+
     return <DockPanel title="Timeline" icon={<MdHistory />} onClose={this.props.onClose}>
       <p className="meridian-panel-subtitle">
         Checkpoints you name on purpose — separate from undo. Preview any of them on the live map, restore, or compare two side by side.
       </p>
 
-      {previewingId && (
-        <div className="meridian-card" style={{ borderColor: "rgba(217,154,91,0.4)" }}>
+      {viewingId && (
+        <div className="meridian-card meridian-card--viewing">
           <div className="meridian-card-row">
-            <span className="meridian-card-title">Previewing a checkpoint</span>
-            <button className="meridian-btn meridian-btn--sm" onClick={this.returnToCurrent}>Return to current</button>
+            <MdVisibility size={14} />
+            <span className="meridian-card-title">
+              {previewingFrom ? "Previewing" : "Showing"} “{viewingLabel}”
+            </span>
+            {previewingFrom && (
+              <button className="meridian-btn meridian-btn--sm" onClick={this.returnToCurrent}>Return to current</button>
+            )}
           </div>
         </div>
       )}
@@ -146,9 +169,13 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
             {snapshots.map((snapshot, i) => {
               const prev = snapshots[i + 1];
               const summary = prev ? summarizeDiff(diffStyles(prev.style, snapshot.style)) : "Initial checkpoint";
+              const isViewing = viewingId === snapshot.id;
               return <div className="meridian-timeline-entry" key={snapshot.id}>
-                <span className={`meridian-timeline-dot${previewingId === snapshot.id ? " meridian-timeline-dot--current" : ""}`} />
-                <div className="meridian-card">
+                <span className={`meridian-timeline-dot${isViewing ? " meridian-timeline-dot--current" : ""}`} />
+                <div
+                  className={`meridian-card${isViewing ? " meridian-card--viewing" : ""}`}
+                  aria-current={isViewing ? "true" : undefined}
+                >
                   <div className="meridian-card-row">
                     <input
                       type="checkbox"
@@ -158,6 +185,7 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
                       aria-label={`Select ${snapshot.label} to compare`}
                     />
                     <span className="meridian-card-title">{snapshot.label}</span>
+                    {isViewing && <span className="meridian-viewing-badge">Viewing</span>}
                     <button className="meridian-icon-btn" title="Preview" onClick={() => this.preview(snapshot)}><MdVisibility size={14} /></button>
                     <button className="meridian-icon-btn" title="Restore" onClick={() => this.restore(snapshot)}><MdRestore size={14} /></button>
                     <button className="meridian-icon-btn" title="Delete" onClick={() => this.remove(snapshot)}><MdDelete size={14} /></button>

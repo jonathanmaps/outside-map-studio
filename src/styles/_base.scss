@@ -20,9 +20,11 @@ body {
   box-sizing: inherit;
 }
 
+// Selected text needs to read as selected at a glance. The previous
+// 16%-alpha accent was barely distinguishable from the input background.
 ::selection {
-  background-color: vars.$color-accent-dim;
-  color: vars.$color-white;
+  background-color: vars.$color-accent;
+  color: vars.$color-black;
 }
 
 p {

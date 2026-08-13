@@ -530,11 +530,35 @@
   height: 9px;
   border-radius: 50%;
   background: vars.$color-black;
-  border: 2px solid vars.$color-accent;
+  border: 2px solid rgba(217, 154, 91, 0.45);
 
   &--current {
     background: vars.$color-accent;
+    border-color: vars.$color-accent;
+    box-shadow: 0 0 0 3px vars.$color-accent-dim;
   }
+}
+
+// The checkpoint currently rendered on the map.
+.meridian-card--viewing {
+  border-color: vars.$color-accent;
+  background: vars.$color-accent-dim;
+
+  .meridian-card-title {
+    color: vars.$color-accent-strong;
+  }
+}
+
+.meridian-viewing-badge {
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: vars.$color-black;
+  background: vars.$color-accent;
 }
 
 .meridian-timeline-select {

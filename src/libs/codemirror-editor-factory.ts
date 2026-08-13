@@ -163,6 +163,18 @@ export function createEditor(props: {
       EditorView.theme({
         "&": {
           fontSize: "9pt"
+        },
+        // CodeMirror paints its own selection layer, so the global
+        // ::selection rule never reaches it. Match the app accent here
+        // too, and keep it visible when the editor loses focus.
+        "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {
+          backgroundColor: "#d99a5b !important"
+        },
+        ".cm-selectionMatch": {
+          backgroundColor: "rgba(217, 154, 91, 0.28)"
+        },
+        ".cm-cursor, .cm-dropCursor": {
+          borderLeftColor: "#eab27a"
         }
       }),
       EditorView.updateListener.of((update) => {
