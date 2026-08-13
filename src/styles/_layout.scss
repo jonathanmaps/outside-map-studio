@@ -67,7 +67,10 @@
     bottom: 0;
     right: 0;
     z-index: 10;
-    width: vars.$layout-map-width;
+    // Sized to its content rather than a hardcoded calc() against the
+    // panel widths, which goes stale as soon as a panel is resized.
+    width: auto;
+    max-width: 70vw;
     background-color: vars.$color-black;
   }
 }

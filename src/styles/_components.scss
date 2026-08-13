@@ -7,7 +7,11 @@
   background: white;
   display: flex;
   position: relative;
-  width: vars.$layout-map-width;
+  // Fill whatever the list/editor panels leave behind. A hardcoded
+  // calc() against their default widths goes stale the moment either
+  // panel is resized or scaled, leaving a dead strip beside the map.
+  flex: 1;
+  min-width: 0;
 
   &--error {
     align-items: center;

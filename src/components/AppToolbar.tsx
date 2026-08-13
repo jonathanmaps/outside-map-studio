@@ -56,6 +56,7 @@ type ToolbarLinkProps = {
   className?: string
   children?: React.ReactNode
   href?: string
+  label?: string
 };
 
 class ToolbarLink extends React.Component<ToolbarLinkProps> {
@@ -66,6 +67,8 @@ class ToolbarLink extends React.Component<ToolbarLinkProps> {
       rel="noopener noreferrer"
       target="_blank"
       data-wd-key="toolbar:link"
+      title={this.props.label}
+      aria-label={this.props.label}
     >
       {this.props.children}
     </a>;
@@ -75,6 +78,7 @@ class ToolbarLink extends React.Component<ToolbarLinkProps> {
 type ToolbarSelectProps = {
   children?: React.ReactNode
   wdKey?: string
+  title?: string
 };
 
 class ToolbarSelect extends React.Component<ToolbarSelectProps> {
@@ -82,6 +86,7 @@ class ToolbarSelect extends React.Component<ToolbarSelectProps> {
     return <div
       className='maputnik-toolbar-select'
       data-wd-key={this.props.wdKey}
+      title={this.props.title}
     >
       {this.props.children}
     </div>;
@@ -92,14 +97,20 @@ type ToolbarActionProps = {
   children?: React.ReactNode
   onClick?(...args: unknown[]): unknown
   wdKey?: string
+  className?: string
+  /** Also used as the accessible name — the visible label is hidden by
+   * CSS at narrow widths, which drops it from the accessibility tree. */
+  label: string
 };
 
 class ToolbarAction extends React.Component<ToolbarActionProps> {
   render() {
     return <button
-      className='maputnik-toolbar-action'
+      className={classnames("maputnik-toolbar-action", this.props.className)}
       data-wd-key={this.props.wdKey}
       onClick={this.props.onClick}
+      title={this.props.label}
+      aria-label={this.props.label}
     >
       {this.props.children}
     </button>;
@@ -247,6 +258,7 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
           className="maputnik-toolbar-search"
           data-wd-key="nav:command-palette"
           onClick={this.props.onOpenCommandPalette}
+          title={t("Jump to anything (⌘K)")}
           aria-label={t("Open command palette")}
         >
           <MdSearch />
@@ -261,70 +273,74 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
         />
 
         <div className="maputnik-toolbar__actions" role="navigation" aria-label="Toolbar">
-          <ToolbarAction wdKey="nav:open" onClick={() => this.props.onToggleModal("open")}>
+          <ToolbarAction wdKey="nav:open" label={t("Open style")} onClick={() => this.props.onToggleModal("open")}>
             <MdOpenInBrowser />
             <IconText>{t("Open")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:export" onClick={() => this.props.onToggleModal("export")}>
+          <ToolbarAction wdKey="nav:export" label={t("Save / Export style")} onClick={() => this.props.onToggleModal("export")}>
             <MdSave />
             <IconText>{t("Save")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:code-editor" onClick={() => this.props.onToggleModal("codeEditor")}>
+          <ToolbarAction wdKey="nav:code-editor" label={t("Code editor")} onClick={() => this.props.onToggleModal("codeEditor")}>
             <MdCode />
             <IconText>{t("Code")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:sources" onClick={() => this.props.onToggleModal("sources")}>
+          <ToolbarAction wdKey="nav:sources" label={t("Data sources")} onClick={() => this.props.onToggleModal("sources")}>
             <MdLayers />
             <IconText>{t("Sources")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:settings" onClick={() => this.props.onToggleModal("settings")}>
+          <ToolbarAction wdKey="nav:settings" label={t("Style settings")} onClick={() => this.props.onToggleModal("settings")}>
             <MdSettings />
             <IconText>{t("Settings")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:global-state" onClick={() => this.props.onToggleModal("globalState")}>
+          <ToolbarAction wdKey="nav:global-state" label={t("Global state")} onClick={() => this.props.onToggleModal("globalState")}>
             <MdPublic />
             <IconText>{t("State")}</IconText>
           </ToolbarAction>
 
           <span className="maputnik-toolbar-divider" />
 
-          <button
-            className={classnames("maputnik-toolbar-action", "maputnik-toolbar-action--ai", {
+          <ToolbarAction
+            wdKey="nav:ai-copilot"
+            label={t("Copilot — on-device style intelligence")}
+            className={classnames("maputnik-toolbar-action--ai", {
               "maputnik-toolbar-action--active": this.props.activeDockPanel === "ai"
             })}
-            data-wd-key="nav:ai-copilot"
             onClick={() => this.props.onToggleDockPanel("ai")}
           >
             <MdAutoAwesome />
             <IconText>{t("Copilot")}</IconText>
-          </button>
-          <button
-            className={classnames("maputnik-toolbar-action", {
+          </ToolbarAction>
+          <ToolbarAction
+            wdKey="nav:timeline"
+            label={t("Timeline — checkpoints and diffs")}
+            className={classnames({
               "maputnik-toolbar-action--active": this.props.activeDockPanel === "timeline"
             })}
-            data-wd-key="nav:timeline"
             onClick={() => this.props.onToggleDockPanel("timeline")}
           >
             <MdHistory />
             <IconText>{t("Timeline")}</IconText>
-          </button>
-          <button
-            className={classnames("maputnik-toolbar-action", {
+          </ToolbarAction>
+          <ToolbarAction
+            wdKey="nav:workspace"
+            label={t("Workspace — all saved styles")}
+            className={classnames({
               "maputnik-toolbar-action--active": this.props.activeDockPanel === "workspace"
             })}
-            data-wd-key="nav:workspace"
             onClick={() => this.props.onToggleDockPanel("workspace")}
           >
             <MdFolderOpen />
             <IconText>{t("Workspace")}</IconText>
-          </button>
+          </ToolbarAction>
 
-          <ToolbarSelect wdKey="nav:inspect">
+          <ToolbarSelect wdKey="nav:inspect" title={t("View mode — map, inspect, or color-blindness filters")}>
             <MdFindInPage />
             <IconText>{t("View")}
               <select
                 className="maputnik-select"
                 data-wd-key="maputnik-select"
+                aria-label={t("View mode")}
                 onChange={(e) => this.handleSelection(e.target.value as MapState)}
                 value={currentView?.id}
               >
@@ -348,8 +364,8 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             </IconText>
           </ToolbarSelect>
 
-          <ToolbarSelect wdKey="nav:language">
-            <MdLanguage title={t("Language")} />
+          <ToolbarSelect wdKey="nav:language" title={t("Language")}>
+            <MdLanguage />
             <select
               className="maputnik-select"
               data-wd-key="maputnik-lang-select"
@@ -367,8 +383,8 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             </select>
           </ToolbarSelect>
 
-          <ToolbarLink href={"https://github.com/maplibre/maputnik/wiki"}>
-            <MdHelpOutline title={t("Help")} aria-label={t("Help")} />
+          <ToolbarLink href={"https://github.com/maplibre/maputnik/wiki"} label={t("Help — opens the wiki")}>
+            <MdHelpOutline />
           </ToolbarLink>
         </div>
       </div>
