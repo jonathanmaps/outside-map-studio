@@ -369,7 +369,7 @@
   .maputnik-multibutton .maputnik-button-selected,
   .maputnik-multibutton .maputnik-button-selected:hover {
     background-color: vars.$color-accent;
-    color: vars.$color-black;
+    color: vars.$color-on-accent;
     font-weight: 600;
   }
 }

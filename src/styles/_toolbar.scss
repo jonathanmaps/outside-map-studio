@@ -44,10 +44,20 @@
     vertical-align: top;
   }
 
-  .maputnik-toolbar-mark {
+  .maputnik-outside-logo {
     color: vars.$color-accent;
-    margin-right: vars.$margin-2;
-    display: inline-flex;
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  // A hairline between the wordmark and the product name keeps the brand
+  // reading as the brand rather than as part of the tool's title.
+  h1::before {
+    content: "";
+    align-self: stretch;
+    width: 1px;
+    margin: 4px vars.$margin-3 4px vars.$margin-3;
+    background: vars.$color-border-strong;
   }
 }
 
@@ -98,11 +108,13 @@
 }
 
 .maputnik-toolbar-name {
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-size: 13px;
-  color: vars.$color-white;
+  font-size: 11px;
+  // Deliberately quieter than the wordmark — this labels the tool, the
+  // logo carries the brand.
+  color: vars.$color-lowgray;
 }
 
 .maputnik-toolbar-version {

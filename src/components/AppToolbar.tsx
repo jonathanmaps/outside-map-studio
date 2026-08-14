@@ -19,6 +19,7 @@ import {
   MdPhoneIphone
 } from "react-icons/md";
 import { DEVICE_PRESETS } from "../libs/devices";
+import { OutsideLogo } from "./OutsideLogo";
 import pkgJson from "../../package.json";
 import { withTranslation, type WithTranslation } from "react-i18next";
 import { supportedLanguages } from "../i18n";
@@ -33,15 +34,8 @@ const colorAccessibilityFiltersEnabled = ["chrome", "firefox"].indexOf(browser!.
 
 export type ModalTypes = "settings" | "sources" | "open" | "shortcuts" | "export" | "debug" | "globalState" | "codeEditor";
 
-const APP_NAME = "Meridian";
-
-const MeridianMark = () => (
-  <svg className="maputnik-toolbar-mark" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <circle cx="12" cy="12" r="9.25" stroke="currentColor" strokeWidth="1.4" />
-    <path d="M3 12H21" stroke="currentColor" strokeWidth="1.4" />
-    <path d="M12 2.75C15.25 6 15.25 18 12 21.25C8.75 18 8.75 6 12 2.75Z" stroke="currentColor" strokeWidth="1.4" />
-  </svg>
-);
+/** Names the tool without competing with the wordmark beside it. */
+const APP_NAME = "Map Studio";
 
 type IconTextProps = {
   children?: React.ReactNode
@@ -250,7 +244,7 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             href="https://github.com/maplibre/maputnik"
             title={t("Forked from Maputnik")}
           >
-            <MeridianMark />
+            <OutsideLogo title="Outside" />
             <h1>
               <span className="maputnik-toolbar-name">{APP_NAME}</span>
               <span className="maputnik-toolbar-version">{pkgJson.version}</span>

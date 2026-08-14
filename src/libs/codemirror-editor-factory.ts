@@ -6,6 +6,7 @@ import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { expression, type StylePropertySpecification, validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import jsonToAst, { type ValueNode, type PropertyNode } from "json-to-ast";
+import { BRAND } from "./brand";
 import { jsonPathToPosition } from "./json-path-to-position";
 
 export type LintType = "layer" | "style" | "expression" | "json";
@@ -168,19 +169,19 @@ export function createEditor(props: {
         // ::selection rule never reaches it. Match the app accent here
         // too, and keep it visible when the editor loses focus.
         "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {
-          backgroundColor: "#d99a5b !important"
+          backgroundColor: `${BRAND.accent} !important`
         },
         ".cm-selectionMatch": {
-          backgroundColor: "rgba(217, 154, 91, 0.28)"
+          backgroundColor: BRAND.accentSoft
         },
         // A 1.2px dim caret is easy to lose in a wall of JSON — widen it
         // and use the accent so the insertion point is obvious.
         ".cm-cursor, .cm-dropCursor": {
-          borderLeftColor: "#eab27a",
+          borderLeftColor: BRAND.accentStrong,
           borderLeftWidth: "2px"
         },
         "&.cm-focused .cm-activeLine": {
-          backgroundColor: "rgba(217, 154, 91, 0.07)"
+          backgroundColor: BRAND.accentFaint
         }
       }),
       EditorView.updateListener.of((update) => {
