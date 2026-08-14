@@ -99,6 +99,106 @@
   }
 }
 
+// ============================================================
+// Device preview — frames the live map at a handset/tablet viewport.
+// ============================================================
+.maputnik-device-stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.014) 0 10px, transparent 10px 20px),
+    vars.$color-black;
+}
+
+.maputnik-device-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: vars.$margin-2;
+  padding: 6px vars.$margin-3;
+  border-bottom: 1px solid vars.$color-border;
+  background: vars.$color-gray;
+}
+
+.maputnik-device-select {
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid vars.$color-border;
+  border-radius: vars.$radius-1;
+  background: vars.$color-midgray;
+  color: vars.$color-white;
+  font-size: vars.$font-size-6;
+}
+
+.maputnik-device-dims {
+  flex: 1;
+  min-width: 0;
+  color: vars.$color-white;
+  font-family: vars.$font-family-mono;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.maputnik-device-dims-sub {
+  color: vars.$color-lowgray;
+}
+
+.maputnik-device-btn {
+  all: unset;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: vars.$radius-1;
+  color: vars.$color-lowgray;
+  cursor: pointer;
+
+  &:hover {
+    background: vars.$color-midgray;
+    color: vars.$color-white;
+  }
+
+  &--on {
+    color: vars.$color-accent-strong;
+    background: vars.$color-accent-dim;
+  }
+}
+
+.maputnik-device-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.maputnik-device-frame {
+  flex: 0 0 auto;
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  // A neutral bezel so the map edge is unambiguous without pretending to
+  // be a photoreal handset.
+  box-shadow:
+    0 0 0 8px #0e0f13,
+    0 0 0 9px vars.$color-border-strong,
+    0 24px 60px rgba(0, 0, 0, 0.55);
+
+  // The map fills the frame; MapLibre reads its size from this box.
+  .maputnik-map__container {
+    width: 100%;
+    height: 100%;
+  }
+}
+
 .maputnik-visually-hidden {
   position: absolute;
   width: 1px;

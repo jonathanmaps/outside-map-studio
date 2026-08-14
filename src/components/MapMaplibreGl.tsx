@@ -69,6 +69,9 @@ type MapMaplibreGlInternalProps = {
   }
   replaceAccessTokens(mapStyle: StyleSpecification): StyleSpecification
   onChange(value: {center: LngLat, zoom: number, _from: "map" | "app"}): unknown
+  /** Changes whenever the map's container is reshaped (device preview),
+   * so the map knows to resize even though no other prop changed. */
+  resizeKey?: string
 } & WithTranslation;
 
 type MapMaplibreGlState = {
@@ -89,6 +92,7 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
   };
   container: HTMLDivElement | null = null;
   map: Map | null = null;
+  containerObserver?: ResizeObserver;
 
   constructor(props: MapMaplibreGlInternalProps) {
     super(props);
@@ -114,7 +118,16 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     return should;
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps: MapMaplibreGlInternalProps) {
+    // Changing the device preview reshapes the map's container without
+    // altering any of this component's other props, so nothing else here
+    // would notice. The key changes with the frame, giving a deterministic
+    // resize that doesn't depend on ResizeObserver — which is not
+    // delivered at all while the tab is hidden.
+    if (prevProps.resizeKey !== this.props.resizeKey) {
+      this.map?.resize();
+    }
+
     // Use the instance map rather than state.map: state.map is only set once
     // "style.load" fires, which never happens when sprite/glyph requests fail
     // (e.g. placeholder API keys), and view jumps must work regardless.
@@ -147,6 +160,10 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
       }, 500);
     }
 
+  }
+
+  componentWillUnmount() {
+    this.containerObserver?.disconnect();
   }
 
   componentDidMount() {
@@ -261,6 +278,18 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
 
     map.on("dragend", mapViewChange);
     map.on("zoomend", mapViewChange);
+
+    // Resize straight off the container's own box. MapLibre's built-in
+    // resize tracking didn't pick up the device-preview frame changing
+    // shape, leaving the canvas at its previous size while the container
+    // had already changed — so drive it explicitly.
+    if (typeof ResizeObserver !== "undefined" && this.container) {
+      // Resize synchronously in the observer: it already fires after
+      // layout, and deferring through requestAnimationFrame silently does
+      // nothing whenever the tab is throttled or hidden.
+      this.containerObserver = new ResizeObserver(() => this.map?.resize());
+      this.containerObserver.observe(this.container);
+    }
   }
 
   onLayerSelectById = (id: string) => {

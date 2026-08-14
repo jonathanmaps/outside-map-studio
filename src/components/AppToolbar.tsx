@@ -15,8 +15,10 @@ import {
   MdSearch,
   MdAutoAwesome,
   MdHistory,
-  MdFolderOpen
+  MdFolderOpen,
+  MdPhoneIphone
 } from "react-icons/md";
+import { DEVICE_PRESETS } from "../libs/devices";
 import pkgJson from "../../package.json";
 import { withTranslation, type WithTranslation } from "react-i18next";
 import { supportedLanguages } from "../i18n";
@@ -137,6 +139,8 @@ type AppToolbarInternalProps = {
   onOpenCommandPalette(): void
   mapCoordinates: MapCoordinates
   onCoordinateJump(coordinates: MapCoordinates): void
+  deviceId: string | null
+  onSelectDevice(id: string | null): void
 } & WithTranslation;
 
 class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
@@ -362,6 +366,26 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
                 </optgroup>
               </select>
             </IconText>
+          </ToolbarSelect>
+
+          <ToolbarSelect wdKey="nav:device" title={t("Preview the map at a phone or tablet size")}>
+            <MdPhoneIphone />
+            <select
+              className="maputnik-select"
+              data-wd-key="maputnik-device-select"
+              aria-label={t("Device preview")}
+              value={this.props.deviceId ?? ""}
+              onChange={(e) => this.props.onSelectDevice(e.target.value || null)}
+            >
+              <option value="">{t("Desktop")}</option>
+              {(["Phone", "Tablet"] as const).map(group => (
+                <optgroup key={group} label={t(group)}>
+                  {DEVICE_PRESETS.filter(d => d.group === group).map(d => (
+                    <option key={d.id} value={d.id}>{d.label}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </ToolbarSelect>
 
           <ToolbarSelect wdKey="nav:language" title={t("Language")}>

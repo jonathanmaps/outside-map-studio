@@ -29,6 +29,8 @@ import { ModalDebug } from "./modals/ModalDebug";
 import { ModalGlobalState } from "./modals/ModalGlobalState";
 
 import { ErrorBoundary } from "./ErrorBoundary";
+import { DeviceFrame } from "./DeviceFrame";
+import { findDevice, type Orientation } from "../libs/devices";
 import { CommandPalette, type Command } from "./CommandPalette";
 import { AICopilotPanel } from "./AICopilotPanel";
 import { TimelinePanel } from "./TimelinePanel";
@@ -152,6 +154,10 @@ type AppState = {
   fileHandle: FileSystemFileHandle | null
   activeDockPanel: DockPanelType
   commandPaletteOpen: boolean
+  /** Device preset id to frame the map at, or null for the full editor. */
+  deviceId: string | null
+  deviceOrientation: Orientation
+  deviceFit: boolean
 };
 
 export class App extends React.Component<any, AppState> {
@@ -207,6 +213,9 @@ export class App extends React.Component<any, AppState> {
       fileHandle: null,
       activeDockPanel: null,
       commandPaletteOpen: false,
+      deviceId: null,
+      deviceOrientation: "portrait",
+      deviceFit: true,
     };
 
     this.layerWatcher = new LayerWatcher({
@@ -872,6 +881,9 @@ export class App extends React.Component<any, AppState> {
     const mapProps = {
       mapStyle: renderedMapStyle,
       mapView: this.state.mapView,
+      resizeKey: this.state.deviceId
+        ? `${this.state.deviceId}:${this.state.deviceOrientation}:${this.state.deviceFit}`
+        : "full",
       replaceAccessTokens: (mapStyle: StyleSpecification) => {
         return replaceAccessTokens(mapStyle, {
           allowFallback: true
@@ -914,10 +926,38 @@ export class App extends React.Component<any, AppState> {
       elementStyle.filter = `url('#${filterName}')`;
     }
 
-    return <div style={elementStyle} className="maputnik-map__container" data-wd-key="maplibre:container">
+    const mapContainer = <div style={elementStyle} className="maputnik-map__container" data-wd-key="maplibre:container">
       {mapElement}
     </div>;
+
+    const device = findDevice(this.state.deviceId);
+    if (!device) return mapContainer;
+
+    return <DeviceFrame
+      device={device}
+      orientation={this.state.deviceOrientation}
+      fitToViewport={this.state.deviceFit}
+      onSelectDevice={id => this.setDevice(id)}
+      onToggleOrientation={() => this.setState(
+        s => ({deviceOrientation: s.deviceOrientation === "portrait" ? "landscape" : "portrait"}),
+        this.nudgeMapResize
+      )}
+      onToggleFit={() => this.setState(s => ({deviceFit: !s.deviceFit}), this.nudgeMapResize)}
+      onClose={() => this.setDevice(null)}
+    >
+      {mapContainer}
+    </DeviceFrame>;
   }
+
+  /** MapLibre sizes itself from its container, so it needs a nudge whenever
+   * the device frame changes shape. */
+  nudgeMapResize = () => {
+    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+  };
+
+  setDevice = (deviceId: string | null) => {
+    this.setState({deviceId}, this.nudgeMapResize);
+  };
 
   setStateInUrl = () => {
     const {mapStyle, isOpen} = this.state;
@@ -1091,6 +1131,8 @@ export class App extends React.Component<any, AppState> {
         lng: this.state.mapView.center.lng,
       }}
       onCoordinateJump={this.onCoordinateJump}
+      deviceId={this.state.deviceId}
+      onSelectDevice={this.setDevice}
     />;
 
     const codeEditor = this.state.isOpen.codeEditor ? <CodeEditor
