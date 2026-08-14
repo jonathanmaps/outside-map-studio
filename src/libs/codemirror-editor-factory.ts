@@ -173,8 +173,14 @@ export function createEditor(props: {
         ".cm-selectionMatch": {
           backgroundColor: "rgba(217, 154, 91, 0.28)"
         },
+        // A 1.2px dim caret is easy to lose in a wall of JSON — widen it
+        // and use the accent so the insertion point is obvious.
         ".cm-cursor, .cm-dropCursor": {
-          borderLeftColor: "#eab27a"
+          borderLeftColor: "#eab27a",
+          borderLeftWidth: "2px"
+        },
+        "&.cm-focused .cm-activeLine": {
+          backgroundColor: "rgba(217, 154, 91, 0.07)"
         }
       }),
       EditorView.updateListener.of((update) => {

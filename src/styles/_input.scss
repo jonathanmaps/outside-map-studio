@@ -2,6 +2,16 @@
 @use "vars";
 
 @use 'sass:color';
+// The text caret inherits the field's muted grey by default, which is
+// effectively invisible on these dark backgrounds. Give it the accent
+// everywhere text can be entered.
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  caret-color: vars.$color-accent-strong;
+}
+
 //INPUT
 .maputnik-input {
   height: 24px;
@@ -15,6 +25,15 @@
   border: none;
   background-color: vars.$color-gray;
   color: color.adjust(vars.$color-lowgray, $lightness: 12%);
+  transition: background-color vars.$transition-fast, box-shadow vars.$transition-fast;
+
+  // Lift the whole field while it holds the caret, so "where am I typing"
+  // is answered by more than a 1px blinking line.
+  &:focus {
+    background-color: vars.$color-midgray;
+    color: vars.$color-white;
+    box-shadow: inset 0 0 0 1px vars.$color-accent;
+  }
 
   &:invalid {
     border: solid 1px #B71C1C;

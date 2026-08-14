@@ -84,6 +84,20 @@ function setFetchAccessToken(url: string, mapStyle: StyleSpecification) {
   }
 }
 
+/**
+ * True when the event target is somewhere the user is entering text, so
+ * single-key shortcuts must not steal the keystroke. Covers the CodeMirror
+ * editor, which uses a contenteditable rather than a real <textarea>.
+ */
+function isTypingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el || !el.tagName) return false;
+  const tag = el.tagName.toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+  if (el.isContentEditable) return true;
+  return !!el.closest?.(".cm-editor");
+}
+
 function updateRootSpec(spec: any, fieldName: string, newValues: any) {
   return {
     ...spec,
@@ -249,7 +263,7 @@ export class App extends React.Component<any, AppState> {
       {
         key: "m",
         handler: () => {
-          (document.querySelector(".maplibregl-canvas") as HTMLCanvasElement).focus();
+          (document.querySelector(".maplibregl-canvas") as HTMLCanvasElement)?.focus();
         }
       },
       {
@@ -258,24 +272,91 @@ export class App extends React.Component<any, AppState> {
           this.toggleModal("debug");
         }
       },
+      // Panels
+      {
+        key: "c",
+        handler: () => this.toggleDockPanel("ai")
+      },
+      {
+        key: "t",
+        handler: () => this.toggleDockPanel("timeline")
+      },
+      {
+        key: "w",
+        handler: () => this.toggleDockPanel("workspace")
+      },
+      {
+        key: "j",
+        handler: () => this.toggleModal("codeEditor")
+      },
+      {
+        key: "/",
+        handler: () => this.setState({ commandPaletteOpen: true })
+      },
+      // Layer navigation and manipulation
+      {
+        key: "[",
+        handler: () => this.stepLayer(-1)
+      },
+      {
+        key: "]",
+        handler: () => this.stepLayer(1)
+      },
+      {
+        key: "v",
+        handler: () => {
+          if (this.state.mapStyle.layers.length > 0) {
+            this.onLayerVisibilityToggle(this.state.selectedLayerIndex);
+          }
+        }
+      },
+      {
+        key: "x",
+        handler: () => {
+          if (this.state.mapStyle.layers.length > 0) {
+            this.onLayerIsolationToggle(this.state.selectedLayerIndex);
+          }
+        }
+      },
+      {
+        key: "f",
+        handler: () => {
+          const search = document.querySelector("[data-wd-key='layer-list:search']") as HTMLInputElement | null;
+          search?.focus();
+          search?.select();
+        }
+      },
     ];
 
     document.body.addEventListener("keyup", (e) => {
       if(e.key === "Escape") {
         (e.target as HTMLElement).blur();
         document.body.focus();
+        return;
       }
-      else if(this.state.isOpen.shortcuts || document.activeElement === document.body) {
-        const shortcut = shortcuts.find((shortcut) => {
-          return (shortcut.key === e.key);
-        });
 
-        if(shortcut) {
-          this.setModal("shortcuts", false);
-          shortcut.handler();
-        }
+      // Modifier combos belong to the browser/OS and to handleKeyPress.
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      // Previously these only fired while document.body itself held focus,
+      // so clicking almost anything (the map canvas, a layer row, a button)
+      // silently killed every shortcut. Gate on "not typing" instead.
+      if (!this.state.isOpen.shortcuts && isTypingTarget(e.target)) return;
+
+      const shortcut = shortcuts.find(shortcut => shortcut.key === e.key);
+      if(shortcut) {
+        this.setModal("shortcuts", false);
+        shortcut.handler();
       }
     });
+  };
+
+  /** Move the layer selection by `delta`, clamped to the list. */
+  stepLayer = (delta: number) => {
+    const layers = this.state.mapStyle.layers || [];
+    if (layers.length === 0) return;
+    const next = clamp(this.state.selectedLayerIndex + delta, 0, layers.length - 1);
+    if (next !== this.state.selectedLayerIndex) this.onLayerSelect(next);
   };
 
   handleKeyPress = (e: KeyboardEvent) => {

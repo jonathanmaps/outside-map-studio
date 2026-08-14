@@ -42,9 +42,13 @@
       padding: 6px 8px;
       color: vars.$color-white;
       background: vars.$color-gray;
+      transition: border-color vars.$transition-fast, background-color vars.$transition-fast;
 
+      // Accent rather than green, to match every other focused field —
+      // green reads as "visible/ok" elsewhere in this UI.
       &:focus {
-        border-color: vars.$color-green;
+        border-color: vars.$color-accent;
+        background: vars.$color-midgray;
         outline: none;
       }
     }

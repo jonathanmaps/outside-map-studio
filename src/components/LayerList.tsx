@@ -240,24 +240,48 @@ class LayerListContainerInternal extends React.Component<LayerListContainerInter
     return propsChanged;
   }
 
-  componentDidUpdate (prevProps: LayerListContainerProps) {
-    if (prevProps.selectedLayerIndex !== this.props.selectedLayerIndex) {
-      const selectedItemNode = this.selectedItemRef.current;
-      if (selectedItemNode && selectedItemNode.node) {
-        const target = selectedItemNode.node;
-        const options = {
-          root: this.scrollContainerRef.current,
-          threshold: 1.0
-        };
-        const observer = new IntersectionObserver(entries => {
-          observer.unobserve(target);
-          if (entries.length > 0 && entries[0].intersectionRatio < 1) {
-            target.scrollIntoView();
-          }
-        }, options);
+  /**
+   * Bring the selected layer back into view. `center` is used when the list
+   * contents changed underneath the user (e.g. clearing the search restores
+   * every layer), where landing mid-list is far easier to get oriented in
+   * than being nudged to an edge.
+   */
+  scrollSelectedIntoView(center: boolean) {
+    // LayerListItem assigns the <li> element straight onto this ref. The
+    // previous code read `.node` off it, which is always undefined — so
+    // scrolling the selection into view never actually ran.
+    const target = this.selectedItemRef.current as HTMLElement | null;
+    if (!target || !target.isConnected) return;
 
-        observer.observe(target);
-      }
+    if (center) {
+      target.scrollIntoView({block: "center", inline: "nearest"});
+      return;
+    }
+
+    // Only scroll when the row isn't already fully visible, so stepping
+    // through neighbouring layers doesn't yank the list around. Measured
+    // directly rather than via IntersectionObserver, whose async callback
+    // could resolve after another update had already moved the selection.
+    const scroller = this.scrollContainerRef.current;
+    const viewport = scroller
+      ? scroller.getBoundingClientRect()
+      : {top: 0, bottom: window.innerHeight};
+    const rect = target.getBoundingClientRect();
+
+    if (rect.top < viewport.top || rect.bottom > viewport.bottom) {
+      target.scrollIntoView({block: "nearest", inline: "nearest"});
+    }
+  }
+
+  componentDidUpdate (prevProps: LayerListContainerProps, prevState: LayerListContainerState) {
+    // Clearing/changing the search swaps the whole list out. That's a state
+    // change, so the selection-index check below never fired and the list
+    // was left sitting at the top with the selected layer scrolled away.
+    const searchChanged = prevState.searchQuery !== this.state.searchQuery;
+    if (searchChanged) {
+      this.scrollSelectedIntoView(true);
+    } else if (prevProps.selectedLayerIndex !== this.props.selectedLayerIndex) {
+      this.scrollSelectedIntoView(false);
     }
   }
 
