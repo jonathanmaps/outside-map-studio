@@ -12,7 +12,6 @@ import {
   MdSave,
   MdPublic,
   MdCode,
-  MdSearch,
   MdAutoAwesome,
   MdHistory,
   MdFolderOpen,
@@ -20,6 +19,7 @@ import {
 } from "react-icons/md";
 import { DEVICE_PRESETS } from "../libs/devices";
 import { OutsideLogo } from "./OutsideLogo";
+import { ToolbarOverflow } from "./ToolbarOverflow";
 import pkgJson from "../../package.json";
 import { withTranslation, type WithTranslation } from "react-i18next";
 import { supportedLanguages } from "../i18n";
@@ -45,29 +45,6 @@ type IconTextProps = {
 class IconText extends React.Component<IconTextProps> {
   render() {
     return <span className="maputnik-icon-text">{this.props.children}</span>;
-  }
-}
-
-type ToolbarLinkProps = {
-  className?: string
-  children?: React.ReactNode
-  href?: string
-  label?: string
-};
-
-class ToolbarLink extends React.Component<ToolbarLinkProps> {
-  render() {
-    return <a
-      className={classnames("maputnik-toolbar-link", this.props.className)}
-      href={this.props.href}
-      rel="noopener noreferrer"
-      target="_blank"
-      data-wd-key="toolbar:link"
-      title={this.props.label}
-      aria-label={this.props.label}
-    >
-      {this.props.children}
-    </a>;
   }
 }
 
@@ -183,25 +160,25 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
       {
         id: "filter-deuteranopia",
         group: "color-accessibility",
-        title: t("Deuteranopia filter"),
+        title: t("Deuteranopia"),
         disabled: !colorAccessibilityFiltersEnabled,
       },
       {
         id: "filter-protanopia",
         group: "color-accessibility",
-        title: t("Protanopia filter"),
+        title: t("Protanopia"),
         disabled: !colorAccessibilityFiltersEnabled,
       },
       {
         id: "filter-tritanopia",
         group: "color-accessibility",
-        title: t("Tritanopia filter"),
+        title: t("Tritanopia"),
         disabled: !colorAccessibilityFiltersEnabled,
       },
       {
         id: "filter-achromatopsia",
         group: "color-accessibility",
-        title: t("Achromatopsia filter"),
+        title: t("Achromatopsia"),
         disabled: !colorAccessibilityFiltersEnabled,
       },
     ];
@@ -252,24 +229,6 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
           </a>
         </div>
 
-        <button
-          className="maputnik-toolbar-search"
-          data-wd-key="nav:command-palette"
-          onClick={this.props.onOpenCommandPalette}
-          title={t("Jump to anything (⌘K)")}
-          aria-label={t("Open command palette")}
-        >
-          <MdSearch />
-          <IconText>{t("Jump to anything")}</IconText>
-          <span className="maputnik-space" />
-          <kbd>⌘K</kbd>
-        </button>
-
-        <CoordinateJump
-          coordinates={this.props.mapCoordinates}
-          onJump={this.props.onCoordinateJump}
-        />
-
         <div className="maputnik-toolbar__actions" role="navigation" aria-label="Toolbar">
           <ToolbarAction wdKey="nav:open" label={t("Open style")} onClick={() => this.props.onToggleModal("open")}>
             <MdOpenInBrowser />
@@ -291,11 +250,6 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             <MdSettings />
             <IconText>{t("Settings")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:global-state" label={t("Global state")} onClick={() => this.props.onToggleModal("globalState")}>
-            <MdPublic />
-            <IconText>{t("State")}</IconText>
-          </ToolbarAction>
-
           <span className="maputnik-toolbar-divider" />
 
           <ToolbarAction
@@ -332,40 +286,48 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             <IconText>{t("Workspace")}</IconText>
           </ToolbarAction>
 
-          <ToolbarSelect wdKey="nav:inspect" title={t("View mode — map, inspect, or color-blindness filters")}>
+        </div>
+
+        {/* Pinned right-hand group. Never shrinks or scrolls, so the map
+            controls stay reachable however narrow the window gets. */}
+        <div className="maputnik-toolbar__right">
+          <CoordinateJump
+            coordinates={this.props.mapCoordinates}
+            onJump={this.props.onCoordinateJump}
+          />
+
+          <ToolbarSelect wdKey="nav:inspect" title={t("View — map, inspect, or colour-vision simulations")}>
             <MdFindInPage />
-            <IconText>{t("View")}
-              <select
-                className="maputnik-select"
-                data-wd-key="maputnik-select"
-                aria-label={t("View mode")}
-                onChange={(e) => this.handleSelection(e.target.value as MapState)}
-                value={currentView?.id}
-              >
-                {views.filter(v => v.group === "general").map((item) => {
+            <select
+              className="maputnik-select maputnik-select--compact"
+              data-wd-key="maputnik-select"
+              aria-label={t("View mode")}
+              onChange={(e) => this.handleSelection(e.target.value as MapState)}
+              value={currentView?.id}
+            >
+              {views.filter(v => v.group === "general").map((item) => {
+                return (
+                  <option key={item.id} value={item.id} disabled={item.disabled} data-wd-key={item.id}>
+                    {item.title}
+                  </option>
+                );
+              })}
+              <optgroup label={t("Colour vision")}>
+                {views.filter(v => v.group === "color-accessibility").map((item) => {
                   return (
-                    <option key={item.id} value={item.id} disabled={item.disabled} data-wd-key={item.id}>
+                    <option key={item.id} value={item.id} disabled={item.disabled}>
                       {item.title}
                     </option>
                   );
                 })}
-                <optgroup label={t("Color accessibility")}>
-                  {views.filter(v => v.group === "color-accessibility").map((item) => {
-                    return (
-                      <option key={item.id} value={item.id} disabled={item.disabled}>
-                        {item.title}
-                      </option>
-                    );
-                  })}
-                </optgroup>
-              </select>
-            </IconText>
+              </optgroup>
+            </select>
           </ToolbarSelect>
 
           <ToolbarSelect wdKey="nav:device" title={t("Preview the map at a phone or tablet size")}>
             <MdPhoneIphone />
             <select
-              className="maputnik-select"
+              className="maputnik-select maputnik-select--compact"
               data-wd-key="maputnik-device-select"
               aria-label={t("Device preview")}
               value={this.props.deviceId ?? ""}
@@ -382,28 +344,41 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             </select>
           </ToolbarSelect>
 
-          <ToolbarSelect wdKey="nav:language" title={t("Language")}>
-            <MdLanguage />
-            <select
-              className="maputnik-select"
-              data-wd-key="maputnik-lang-select"
-              aria-label={t("Language")}
-              onChange={(e) => this.handleLanguageChange(e.target.value)}
-              value={this.props.i18n.language}
+          <ToolbarOverflow label={t("More")}>
+            <button
+              className="maputnik-toolbar-overflow__item"
+              data-wd-key="nav:global-state"
+              onClick={() => this.props.onToggleModal("globalState")}
             >
-              {Object.entries(supportedLanguages).map(([code, name]) => {
-                return (
-                  <option key={code} value={code}>
-                    {name}
-                  </option>
-                );
-              })}
-            </select>
-          </ToolbarSelect>
-
-          <ToolbarLink href={"https://github.com/maplibre/maputnik/wiki"} label={t("Help — opens the wiki")}>
-            <MdHelpOutline />
-          </ToolbarLink>
+              <MdPublic /> {t("Global state")}
+            </button>
+            <a
+              className="maputnik-toolbar-overflow__item"
+              href="https://github.com/maplibre/maputnik/wiki"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MdHelpOutline /> {t("Help")}
+            </a>
+            <label className="maputnik-toolbar-overflow__item maputnik-toolbar-overflow__item--field">
+              <MdLanguage /> {t("Language")}
+              <select
+                className="maputnik-select"
+                data-wd-key="maputnik-lang-select"
+                aria-label={t("Language")}
+                onChange={(e) => this.handleLanguageChange(e.target.value)}
+                value={this.props.i18n.language}
+              >
+                {Object.entries(supportedLanguages).map(([code, name]) => {
+                  return (
+                    <option key={code} value={code}>
+                      {name}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          </ToolbarOverflow>
         </div>
       </div>
     </nav>;

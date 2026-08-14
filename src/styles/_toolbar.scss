@@ -36,6 +36,7 @@
     display: inline-flex;
     align-items: baseline;
     line-height: 1;
+    white-space: nowrap;
   }
 
   img {
@@ -160,18 +161,117 @@
   min-width: 0;
 }
 
+// The left group absorbs all the flex, and is allowed to clip. Everything
+// that must stay reachable lives in __right, which never shrinks.
 .maputnik-toolbar__actions {
   white-space: nowrap;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
-  overflow: visible;
+  overflow: hidden;
 }
 
-// Collapse button labels to icons before anything falls off-screen —
-// the View select must always stay reachable.
-@media (max-width: 1560px) {
+.maputnik-toolbar__right {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: vars.$margin-1;
+  padding-right: vars.$margin-2;
+  margin-left: auto;
+}
+
+// Selects sized to their content instead of a fixed width, so "Map" and
+// "iPhone 15 Pro Max" don't both reserve the same slab of toolbar.
+.maputnik-select--compact {
+  max-width: 112px;
+  margin: 0 !important;
+  padding: 0 16px 0 4px;
+  text-overflow: ellipsis;
+}
+
+// These two only need their icon to be identifiable, and the select beside
+// them already says what they are.
+.maputnik-toolbar-select[data-wd-key="nav:inspect"],
+.maputnik-toolbar-select[data-wd-key="nav:device"] {
+  padding: 0 vars.$margin-2;
+  gap: 4px;
+}
+
+// ---- Overflow menu ----
+.maputnik-toolbar-overflow {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.maputnik-toolbar-overflow__menu {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 0;
+  z-index: 200;
+  min-width: 210px;
+  padding: vars.$margin-1;
+  border: 1px solid vars.$color-border-strong;
+  border-radius: vars.$radius-2;
+  background: vars.$color-gray;
+  box-shadow: vars.$shadow-panel;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.maputnik-toolbar-overflow__item {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: vars.$margin-2;
+  width: 100%;
+  padding: 7px vars.$margin-3;
+  border-radius: vars.$radius-1;
+  color: vars.$color-white;
+  font-size: vars.$font-size-6;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    background: vars.$color-midgray;
+  }
+
+  &--field {
+    cursor: default;
+    justify-content: space-between;
+
+    &:hover {
+      background: none;
+    }
+
+    select {
+      margin-left: auto;
+      max-width: 110px;
+    }
+  }
+}
+
+// Degrade in stages so the map controls on the right are never the thing
+// that gets sacrificed: version number first, then the product name, then
+// the action labels. Everything stays reachable at every step.
+// The thresholds are measured, not guessed — the action labels need about
+// 1470px with the full lockup, and roughly 1320px once the wordmark stands
+// alone, which is what keeps labels alive on a 1440 laptop.
+@media (max-width: 1520px) {
+  .maputnik-toolbar-logo .maputnik-toolbar-version {
+    display: none;
+  }
+}
+
+@media (max-width: 1480px) {
+  .maputnik-toolbar-logo h1 {
+    display: none;
+  }
+}
+
+@media (max-width: 1330px) {
   .maputnik-toolbar__actions .maputnik-toolbar-action .maputnik-icon-text {
     display: none;
   }
@@ -182,14 +282,14 @@
   }
 }
 
-@media (max-width: 1100px) {
-  .maputnik-toolbar-search .maputnik-icon-text,
-  .maputnik-toolbar-search kbd {
-    display: none;
+// Below this the coordinate box gives up width before anything disappears.
+@media (max-width: 900px) {
+  .maputnik-coordinate-jump input {
+    width: 96px;
   }
 
-  .maputnik-toolbar-logo .maputnik-toolbar-version {
-    display: none;
+  .maputnik-select--compact {
+    max-width: 76px;
   }
 }
 
