@@ -28,31 +28,71 @@
     display: flex;
   }
 
+  // Width — and the editor's zoom — are applied inline by AppLayout, which
+  // owns the persisted values. The native `resize: horizontal` grabber is
+  // gone: it only worked from one corner and no keyboard could reach it.
   &-list {
-    width: 200px;
-    min-width: 180px;
-    max-width: 40vw;
-    resize: horizontal;
     overflow: hidden;
     flex: 0 0 auto;
-    border-right: 1px solid vars.$color-border;
     background-color: vars.$color-black;
   }
 
   &-drawer {
-    width: 370px;
-    min-width: 280px;
-    max-width: 55vw;
-    resize: horizontal;
     overflow: hidden;
     flex: 0 0 auto;
-    border-right: 1px solid vars.$color-border;
     background-color: vars.$color-black;
     // scroll-container is position: absolute
     position: relative;
-    // Shrink the layer editor (fields + embedded JSON) so more of it is
-    // visible at once and there's less scrolling to scan through a layer.
-    zoom: 0.82;
+  }
+
+  // Sits between two panels. Wider than it looks so it's easy to grab,
+  // while reading as a plain 1px divider until you approach it.
+  .maputnik-resize-handle {
+    flex: 0 0 auto;
+    width: 7px;
+    margin: 0 -3px;
+    z-index: 5;
+    position: relative;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    touch-action: none;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0 3px;
+      background: vars.$color-border;
+      transition: background-color vars.$transition-fast;
+    }
+
+    &:hover::before,
+    &:focus-visible::before {
+      background: vars.$color-accent;
+      inset: 0 2px;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+
+    // Grip dots, shown only on approach so the chrome stays quiet at rest.
+    &__grip {
+      position: relative;
+      width: 2px;
+      height: 22px;
+      border-radius: 2px;
+      opacity: 0;
+      background: vars.$color-on-accent;
+      transition: opacity vars.$transition-fast;
+    }
+
+    &:hover &__grip,
+    &:focus-visible &__grip {
+      opacity: 0.55;
+    }
   }
 
   &-code-editor {
