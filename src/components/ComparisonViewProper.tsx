@@ -12,19 +12,16 @@ type ComparisonViewProps = {
 };
 
 type ComparisonViewState = {
-  sliderPos: number;
   diffPercentage: number;
   error: string | null;
 };
 
 export class ComparisonViewProper extends React.Component<ComparisonViewProps, ComparisonViewState> {
   state: ComparisonViewState = {
-    sliderPos: 50,
     diffPercentage: 0,
     error: null,
   };
 
-  containerRef = React.createRef<HTMLDivElement>();
   leftMapRef = React.createRef<HTMLDivElement>();
   rightMapRef = React.createRef<HTMLDivElement>();
   diffCanvasRef = React.createRef<HTMLCanvasElement>();
@@ -40,10 +37,6 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
 
   componentDidMount() {
     this.initializeMaps();
-    if (this.props.mode === "side-by-side" && this.containerRef.current) {
-      this.containerRef.current.addEventListener("mousemove", this.handleSliderMove);
-      this.containerRef.current.addEventListener("touchmove", this.handleSliderMove);
-    }
   }
 
   componentDidUpdate(prevProps: ComparisonViewProps) {
@@ -54,27 +47,8 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
   }
 
   componentWillUnmount() {
-    if (this.containerRef.current) {
-      this.containerRef.current.removeEventListener("mousemove", this.handleSliderMove);
-      this.containerRef.current.removeEventListener("touchmove", this.handleSliderMove);
-    }
     this.destroyMaps();
   }
-
-  handleSliderMove = (e: MouseEvent | TouchEvent) => {
-    if (this.props.mode !== "side-by-side") return;
-
-    const container = this.containerRef.current;
-    if (!container) return;
-
-    const rect = container.getBoundingClientRect();
-    const x = (e as MouseEvent).clientX !== undefined
-      ? (e as MouseEvent).clientX - rect.left
-      : (e as TouchEvent).touches[0].clientX - rect.left;
-
-    const pos = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    this.setState({ sliderPos: pos });
-  };
 
   destroyMaps = () => {
     cancelAnimationFrame(this.diffFrameId);
@@ -122,7 +96,7 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
         style: snap1.style,
         ...mapState,
         interactive: true,
-        preserveDrawingBuffer: true,
+        preserveDrawingBuffer: this.props.mode === "3-panels",
       });
 
       this.rightMap = new Map({
@@ -130,7 +104,7 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
         style: snap2.style,
         ...mapState,
         interactive: this.props.mode === "side-by-side",
-        preserveDrawingBuffer: true,
+        preserveDrawingBuffer: this.props.mode === "3-panels",
       });
 
       this.leftMap.on("load", () => {
@@ -209,7 +183,7 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
   };
 
   renderDiff = () => {
-    if (this.props.mode !== "3-panels" || !this.leftMap || !this.rightMap || !this.leftMapReady || !this.rightMapReady || !this.diffContext || !this.diffCanvasRef.current) {
+    if (this.props.mode !== "3-panels" || !this.leftMap || !this.rightMap || !this.leftMapReady || !this.rightMapReady || !this.diffContext) {
       return;
     }
 
@@ -220,39 +194,37 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
       const width = Math.min(left.width, right.width);
       const height = Math.min(left.height, right.height);
 
-      if (width <= 0 || height <= 0) return;
-
-      this.diffCanvasRef.current.width = width;
-      this.diffCanvasRef.current.height = height;
+      this.diffCanvasRef.current!.width = width;
+      this.diffCanvasRef.current!.height = height;
 
       const output = this.diffContext.createImageData(width, height);
       const threshold = 12;
 
       let changedPixels = 0;
 
-      for (let i = 0; i < width * height; i++) {
-        const pixelIdx = i * 4;
-        const lr = left.data[pixelIdx];
-        const lg = left.data[pixelIdx + 1];
-        const lb = left.data[pixelIdx + 2];
-        const rr = right.data[pixelIdx];
-        const rg = right.data[pixelIdx + 1];
-        const rb = right.data[pixelIdx + 2];
+      for (let i = 0; i < output.data.length; i += 4) {
+        const lr = left.data[i];
+        const lg = left.data[i + 1];
+        const lb = left.data[i + 2];
+        const rr = right.data[i];
+        const rg = right.data[i + 1];
+        const rb = right.data[i + 2];
 
         const delta = Math.max(Math.abs(rr - lr), Math.abs(rg - lg), Math.abs(rb - lb));
 
         if (delta < threshold) {
-          output.data[pixelIdx] = 30;
-          output.data[pixelIdx + 1] = 30;
-          output.data[pixelIdx + 2] = 30;
-          output.data[pixelIdx + 3] = 255;
-        } else {
-          changedPixels++;
-          output.data[pixelIdx] = 255;
-          output.data[pixelIdx + 1] = 220;
-          output.data[pixelIdx + 2] = 100;
-          output.data[pixelIdx + 3] = 255;
+          output.data[i] = 20;
+          output.data[i + 1] = 20;
+          output.data[i + 2] = 20;
+          output.data[i + 3] = 255;
+          continue;
         }
+
+        changedPixels += 1;
+        output.data[i] = 255;
+        output.data[i + 1] = 255;
+        output.data[i + 2] = 100;
+        output.data[i + 3] = 255;
       }
 
       this.diffContext.putImageData(output, 0, 0);
@@ -261,6 +233,7 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
       this.setState({ diffPercentage: percentage, error: null });
     } catch (error) {
       console.error("Failed to render diff:", error);
+      this.setState({ error: String(error) });
     }
   };
 
@@ -275,30 +248,18 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
       </div>;
     }
 
-    return <div
-      ref={this.containerRef}
-      className={`comparison-view ${is3Panels ? "comparison-view--three-panel-maps" : "comparison-view--two-panel-maps"}`}
-    >
+    return <div className={`comparison-view ${is3Panels ? "comparison-view--three-panel-maps" : "comparison-view--two-panel-maps"}`}>
       <div className="comparison-view__map-pane">
         <div className="comparison-view__pane-label">{snap1?.label || "Checkpoint 1"}</div>
         <div ref={this.leftMapRef} className="comparison-view__map-container" />
       </div>
-
-      {this.props.mode === "side-by-side" && (
-        <div className="comparison-view__slider" style={{ left: `${this.state.sliderPos}%` }}>
-          <div className="comparison-view__slider-line" />
-          <div className="comparison-view__slider-label">{snap2?.label || "Checkpoint 2"}</div>
-        </div>
-      )}
-
       {is3Panels && (
         <div className="comparison-view__map-pane">
           <div className="comparison-view__pane-label">Visual Diff ({this.state.diffPercentage.toFixed(2)}%)</div>
           <canvas ref={this.diffCanvasRef} className="comparison-view__diff-canvas" />
         </div>
       )}
-
-      <div className="comparison-view__map-pane" style={this.props.mode === "side-by-side" ? { width: `${100 - this.state.sliderPos}%` } : {}}>
+      <div className="comparison-view__map-pane">
         <div className="comparison-view__pane-label">{snap2?.label || "Checkpoint 2"}</div>
         <div ref={this.rightMapRef} className="comparison-view__map-container" />
       </div>
