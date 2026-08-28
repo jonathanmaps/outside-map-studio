@@ -33,6 +33,7 @@ import { DeviceFrame } from "./DeviceFrame";
 import { findDevice, type Orientation } from "../libs/devices";
 import { CommandPalette, type Command } from "./CommandPalette";
 import { ComparisonToolbar, type ComparisonMode } from "./ComparisonToolbar";
+import { ComparisonViewProper } from "./ComparisonViewProper";
 import { ComparisonView } from "./ComparisonView";
 import { AICopilotPanel } from "./AICopilotPanel";
 import { TimelinePanel } from "./TimelinePanel";
@@ -1311,12 +1312,21 @@ export class App extends React.Component<any, AppState> {
     ) : null;
 
     const comparisonView = this.state.comparisonCheckpoints ? (
-      <ComparisonView
-        checkpointIds={this.state.comparisonCheckpoints}
-        snapshots={this.getComparisonSnapshots()}
-        mode={this.state.comparisonMode}
-        diffThreshold={this.state.comparisonDiffThreshold}
-      />
+      this.state.comparisonMode === "3-panels" ? (
+        <ComparisonViewProper
+          checkpointIds={this.state.comparisonCheckpoints}
+          snapshots={this.getComparisonSnapshots()}
+          mode={this.state.comparisonMode}
+          diffThreshold={this.state.comparisonDiffThreshold}
+        />
+      ) : (
+        <ComparisonView
+          checkpointIds={this.state.comparisonCheckpoints}
+          snapshots={this.getComparisonSnapshots()}
+          mode={this.state.comparisonMode}
+          diffThreshold={this.state.comparisonDiffThreshold}
+        />
+      )
     ) : null;
 
     return <>
