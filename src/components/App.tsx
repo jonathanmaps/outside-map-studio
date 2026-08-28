@@ -1312,18 +1312,27 @@ export class App extends React.Component<any, AppState> {
     ) : null;
 
     const comparisonView = this.state.comparisonCheckpoints ? (
-      <ComparisonViewProper
-        checkpointIds={this.state.comparisonCheckpoints}
-        snapshots={this.getComparisonSnapshots()}
-        mode={this.state.comparisonMode}
-        diffThreshold={this.state.comparisonDiffThreshold}
-        mapState={{
-          zoom: this.state.mapView.zoom,
-          center: [this.state.mapView.center.lng, this.state.mapView.center.lat] as [number, number],
-          bearing: 0,
-          pitch: 0,
-        }}
-      />
+      (this.state.comparisonMode === "3-panels" || this.state.comparisonMode === "side-by-side") ? (
+        <ComparisonViewProper
+          checkpointIds={this.state.comparisonCheckpoints}
+          snapshots={this.getComparisonSnapshots()}
+          mode={this.state.comparisonMode}
+          diffThreshold={this.state.comparisonDiffThreshold}
+          mapState={{
+            zoom: this.state.mapView.zoom,
+            center: [this.state.mapView.center.lng, this.state.mapView.center.lat] as [number, number],
+            bearing: 0,
+            pitch: 0,
+          }}
+        />
+      ) : (
+        <ComparisonView
+          checkpointIds={this.state.comparisonCheckpoints}
+          snapshots={this.getComparisonSnapshots()}
+          mode={this.state.comparisonMode}
+          diffThreshold={this.state.comparisonDiffThreshold}
+        />
+      )
     ) : null;
 
     return <>
