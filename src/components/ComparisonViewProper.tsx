@@ -279,15 +279,19 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
       </div>;
     }
 
-    return <div className="comparison-view comparison-view--three-panel-maps">
+    const isSideBySide = this.props.mode === "side-by-side";
+
+    return <div className={`comparison-view ${isSideBySide ? "comparison-view--two-panel-maps" : "comparison-view--three-panel-maps"}`}>
       <div className="comparison-view__map-pane">
         <div className="comparison-view__pane-label">Checkpoint 1</div>
         <div ref={this.currentMapRef} className="comparison-view__map-container" />
       </div>
-      <div className="comparison-view__map-pane">
-        <div className="comparison-view__pane-label">Diff ({this.state.diffPercentage.toFixed(2)}%)</div>
-        <canvas ref={this.diffCanvasRef} className="comparison-view__diff-canvas" />
-      </div>
+      {!isSideBySide && (
+        <div className="comparison-view__map-pane">
+          <div className="comparison-view__pane-label">Diff ({this.state.diffPercentage.toFixed(2)}%)</div>
+          <canvas ref={this.diffCanvasRef} className="comparison-view__diff-canvas" />
+        </div>
+      )}
       <div className="comparison-view__map-pane">
         <div className="comparison-view__pane-label">Checkpoint 2</div>
         <div ref={this.updateMapRef} className="comparison-view__map-container" />

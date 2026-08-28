@@ -527,8 +527,9 @@
 }
 
 // ============================================================
-// Proper three-panel map comparison (ComparisonViewProper)
+// Proper map comparison (ComparisonViewProper) - two and three panel modes
 // ============================================================
+.comparison-view--two-panel-maps,
 .comparison-view--three-panel-maps {
   display: flex;
   width: 100%;

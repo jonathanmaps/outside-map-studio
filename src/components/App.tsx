@@ -1312,7 +1312,7 @@ export class App extends React.Component<any, AppState> {
     ) : null;
 
     const comparisonView = this.state.comparisonCheckpoints ? (
-      this.state.comparisonMode === "3-panels" ? (
+      (this.state.comparisonMode === "3-panels" || this.state.comparisonMode === "side-by-side") ? (
         <ComparisonViewProper
           checkpointIds={this.state.comparisonCheckpoints}
           snapshots={this.getComparisonSnapshots()}
