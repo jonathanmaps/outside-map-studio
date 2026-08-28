@@ -32,9 +32,8 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { DeviceFrame } from "./DeviceFrame";
 import { findDevice, type Orientation } from "../libs/devices";
 import { CommandPalette, type Command } from "./CommandPalette";
-import { ComparisonToolbar, type ComparisonMode } from "./ComparisonToolbar";
+import { ComparisonToolbar } from "./ComparisonToolbar";
 import { ComparisonViewProper } from "./ComparisonViewProper";
-import { ComparisonView } from "./ComparisonView";
 import { AICopilotPanel } from "./AICopilotPanel";
 import { TimelinePanel } from "./TimelinePanel";
 import { WorkspacePanel } from "./WorkspacePanel";
@@ -163,8 +162,6 @@ type AppState = {
   deviceId: string | null
   deviceOrientation: Orientation
   deviceFit: boolean
-  comparisonMode: "side-by-side" | "3-panels" | "visual" | "presence"
-  comparisonDiffThreshold: number
   comparisonCheckpoints: [string, string] | null
 };
 
@@ -224,8 +221,6 @@ export class App extends React.Component<any, AppState> {
       deviceId: null,
       deviceOrientation: "portrait",
       deviceFit: true,
-      comparisonMode: "side-by-side",
-      comparisonDiffThreshold: 50,
       comparisonCheckpoints: null,
     };
 
@@ -461,11 +456,9 @@ export class App extends React.Component<any, AppState> {
   };
 
   setComparisonMode = (mode: ComparisonMode) => {
-    this.setState({ comparisonMode: mode });
   };
 
   setComparisonDiffThreshold = (threshold: number) => {
-    this.setState({ comparisonDiffThreshold: threshold });
   };
 
   closeComparison = () => {
@@ -1303,36 +1296,23 @@ export class App extends React.Component<any, AppState> {
 
     const comparisonToolbar = this.state.comparisonCheckpoints ? (
       <ComparisonToolbar
-        mode={this.state.comparisonMode}
-        onModeChange={this.setComparisonMode}
-        diffThreshold={this.state.comparisonDiffThreshold}
-        onDiffThresholdChange={this.setComparisonDiffThreshold}
         onClose={this.closeComparison}
       />
     ) : null;
 
     const comparisonView = this.state.comparisonCheckpoints ? (
-      (this.state.comparisonMode === "3-panels" || this.state.comparisonMode === "side-by-side") ? (
-        <ComparisonViewProper
-          checkpointIds={this.state.comparisonCheckpoints}
-          snapshots={this.getComparisonSnapshots()}
-          mode={this.state.comparisonMode}
-          diffThreshold={this.state.comparisonDiffThreshold}
-          mapState={{
-            zoom: this.state.mapView.zoom,
-            center: [this.state.mapView.center.lng, this.state.mapView.center.lat] as [number, number],
-            bearing: 0,
-            pitch: 0,
-          }}
-        />
-      ) : (
-        <ComparisonView
-          checkpointIds={this.state.comparisonCheckpoints}
-          snapshots={this.getComparisonSnapshots()}
-          mode={this.state.comparisonMode}
-          diffThreshold={this.state.comparisonDiffThreshold}
-        />
-      )
+      <ComparisonViewProper
+        checkpointIds={this.state.comparisonCheckpoints}
+        snapshots={this.getComparisonSnapshots()}
+        mode="side-by-side"
+        diffThreshold={0}
+        mapState={{
+          zoom: this.state.mapView.zoom,
+          center: [this.state.mapView.center.lng, this.state.mapView.center.lat] as [number, number],
+          bearing: 0,
+          pitch: 0,
+        }}
+      />
     ) : null;
 
     return <>
