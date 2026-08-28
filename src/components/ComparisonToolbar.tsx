@@ -1,7 +1,7 @@
 import React from "react";
 import { MdClose } from "react-icons/md";
 
-export type ComparisonMode = "side-by-side" | "3-panels" | "visual" | "presence";
+export type ComparisonMode = "side-by-side" | "3-panels";
 
 type ComparisonToolbarProps = {
   mode: ComparisonMode;
@@ -16,8 +16,6 @@ export class ComparisonToolbar extends React.Component<ComparisonToolbarProps> {
     const modes: { value: ComparisonMode; label: string }[] = [
       { value: "side-by-side", label: "Side by side" },
       { value: "3-panels", label: "3 panels" },
-      { value: "visual", label: "Visual" },
-      { value: "presence", label: "Presence" },
     ];
 
     return <div className="comparison-toolbar">
