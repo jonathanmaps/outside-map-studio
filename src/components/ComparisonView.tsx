@@ -1,4 +1,5 @@
 import React from "react";
+import { Map } from "maplibre-gl";
 import type { StyleSpecificationWithId } from "../libs/definitions";
 import type { ComparisonMode } from "./ComparisonToolbar";
 
@@ -10,38 +11,42 @@ type ComparisonViewProps = {
 };
 
 type ComparisonViewState = {
-  activeIndex: number;
   checkpoint1Loaded: boolean;
   checkpoint2Loaded: boolean;
 };
 
 export class ComparisonView extends React.Component<ComparisonViewProps, ComparisonViewState> {
   state: ComparisonViewState = {
-    activeIndex: 0,
     checkpoint1Loaded: false,
     checkpoint2Loaded: false,
   };
 
+  map1Ref = React.createRef<HTMLDivElement>();
+  map2Ref = React.createRef<HTMLDivElement>();
+  map1: Map | null = null;
+  map2: Map | null = null;
+  syncingZoom = false;
+  syncingPan = false;
+
   componentDidMount() {
-    this.validateCheckpoints();
+    this.initializeMaps();
   }
 
   componentDidUpdate(prevProps: ComparisonViewProps) {
     if (prevProps.checkpointIds !== this.props.checkpointIds) {
-      this.validateCheckpoints();
+      this.initializeMaps();
+    }
+    if (prevProps.mode !== this.props.mode) {
+      // Trigger resize when mode changes to account for layout shift
+      setTimeout(() => {
+        this.map1?.resize();
+        this.map2?.resize();
+      }, 0);
     }
   }
 
-  validateCheckpoints() {
-    const [id1, id2] = this.props.checkpointIds;
-    const s1 = this.props.snapshots.find(s => s.id === id1);
-    const s2 = this.props.snapshots.find(s => s.id === id2);
-
-    // Simple validation: mark as loaded if styles exist
-    this.setState({
-      checkpoint1Loaded: !!s1?.style,
-      checkpoint2Loaded: !!s2?.style,
-    });
+  componentWillUnmount() {
+    this.destroyMaps();
   }
 
   getCheckpointStyles() {
@@ -51,15 +56,96 @@ export class ComparisonView extends React.Component<ComparisonViewProps, Compari
     return [s1, s2];
   }
 
+  destroyMaps() {
+    if (this.map1) {
+      this.map1.remove();
+      this.map1 = null;
+    }
+    if (this.map2) {
+      this.map2.remove();
+      this.map2 = null;
+    }
+  }
+
+  initializeMaps() {
+    this.destroyMaps();
+
+    const [snap1, snap2] = this.getCheckpointStyles();
+    if (!snap1?.style || !snap2?.style || !this.map1Ref.current || !this.map2Ref.current) {
+      return;
+    }
+
+    try {
+      this.map1 = new Map({
+        container: this.map1Ref.current,
+        style: snap1.style,
+        zoom: 12,
+        center: { lat: 0, lng: 0 },
+        pitch: 0,
+        bearing: 0,
+      });
+
+      this.map2 = new Map({
+        container: this.map2Ref.current,
+        style: snap2.style,
+        zoom: 12,
+        center: { lat: 0, lng: 0 },
+        pitch: 0,
+        bearing: 0,
+      });
+
+      // Sync zoom and pan
+      this.map1.on("zoom", () => {
+        if (!this.syncingZoom && this.map2) {
+          this.syncingZoom = true;
+          this.map2.setZoom(this.map1!.getZoom());
+          this.syncingZoom = false;
+        }
+      });
+
+      this.map1.on("move", () => {
+        if (!this.syncingPan && this.map2) {
+          this.syncingPan = true;
+          const center = this.map1!.getCenter();
+          const bearing = this.map1!.getBearing();
+          const pitch = this.map1!.getPitch();
+          this.map2.setCenter(center);
+          this.map2.setBearing(bearing);
+          this.map2.setPitch(pitch);
+          this.syncingPan = false;
+        }
+      });
+
+      this.map2.on("zoom", () => {
+        if (!this.syncingZoom && this.map1) {
+          this.syncingZoom = true;
+          this.map1.setZoom(this.map2!.getZoom());
+          this.syncingZoom = false;
+        }
+      });
+
+      this.map2.on("move", () => {
+        if (!this.syncingPan && this.map1) {
+          this.syncingPan = true;
+          const center = this.map2!.getCenter();
+          const bearing = this.map2!.getBearing();
+          const pitch = this.map2!.getPitch();
+          this.map1.setCenter(center);
+          this.map1.setBearing(bearing);
+          this.map1.setPitch(pitch);
+          this.syncingPan = false;
+        }
+      });
+
+      this.map1.on("load", () => this.setState({ checkpoint1Loaded: true }));
+      this.map2.on("load", () => this.setState({ checkpoint2Loaded: true }));
+    } catch (err) {
+      console.error("Failed to initialize comparison maps:", err);
+    }
+  }
+
   render() {
     const { mode } = this.props;
-    const { checkpoint1Loaded, checkpoint2Loaded } = this.state;
-
-    if (!checkpoint1Loaded || !checkpoint2Loaded) {
-      return <div className="comparison-view comparison-view--loading">
-        <div className="comparison-view__message">Loading checkpoints...</div>
-      </div>;
-    }
 
     const [snap1, snap2] = this.getCheckpointStyles();
     if (!snap1 || !snap2) {
@@ -70,9 +156,9 @@ export class ComparisonView extends React.Component<ComparisonViewProps, Compari
 
     switch (mode) {
       case "side-by-side":
-        return this.renderSideBySide(snap1, snap2);
+        return this.renderSideBySide();
       case "3-panels":
-        return this.render3Panels(snap1, snap2);
+        return this.render3Panels();
       case "visual":
         return this.renderVisualDiff(snap1, snap2);
       case "presence":
@@ -80,45 +166,30 @@ export class ComparisonView extends React.Component<ComparisonViewProps, Compari
     }
   }
 
-  renderSideBySide(snap1: any, snap2: any) {
+  renderSideBySide() {
     return <div className="comparison-view comparison-view--side-by-side">
       <div className="comparison-view__pane">
         <div className="comparison-view__pane-label">Checkpoint 1</div>
-        <div className="comparison-view__pane-content">
-          <pre className="comparison-view__code">{JSON.stringify(snap1.style, null, 2).slice(0, 500)}...</pre>
-        </div>
+        <div ref={this.map1Ref} className="comparison-view__map-container" />
       </div>
       <div className="comparison-view__divider" />
       <div className="comparison-view__pane">
         <div className="comparison-view__pane-label">Checkpoint 2</div>
-        <div className="comparison-view__pane-content">
-          <pre className="comparison-view__code">{JSON.stringify(snap2.style, null, 2).slice(0, 500)}...</pre>
-        </div>
+        <div ref={this.map2Ref} className="comparison-view__map-container" />
       </div>
     </div>;
   }
 
-  render3Panels(snap1: any, snap2: any) {
+  render3Panels() {
     return <div className="comparison-view comparison-view--3-panels">
       <div className="comparison-view__pane comparison-view__pane--compact">
         <div className="comparison-view__pane-label">Before</div>
-        <div className="comparison-view__pane-content">
-          <pre className="comparison-view__code">{JSON.stringify(snap1.style, null, 2).slice(0, 300)}...</pre>
-        </div>
-      </div>
-      <div className="comparison-view__divider comparison-view__divider--compact" />
-      <div className="comparison-view__pane comparison-view__pane--compact">
-        <div className="comparison-view__pane-label">Diff</div>
-        <div className="comparison-view__pane-content comparison-view__pane-content--diff">
-          <div className="comparison-view__diff-status">Threshold: {this.props.diffThreshold}%</div>
-        </div>
+        <div ref={this.map1Ref} className="comparison-view__map-container" />
       </div>
       <div className="comparison-view__divider comparison-view__divider--compact" />
       <div className="comparison-view__pane comparison-view__pane--compact">
         <div className="comparison-view__pane-label">After</div>
-        <div className="comparison-view__pane-content">
-          <pre className="comparison-view__code">{JSON.stringify(snap2.style, null, 2).slice(0, 300)}...</pre>
-        </div>
+        <div ref={this.map2Ref} className="comparison-view__map-container" />
       </div>
     </div>;
   }
