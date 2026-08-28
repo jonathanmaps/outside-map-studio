@@ -84,12 +84,14 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
       return;
     }
 
-    if (!this.diffCanvasRef.current) {
-      this.setState({ error: "Diff canvas not found" });
-      return;
+    // Only initialize diff canvas in 3-panels mode
+    if (this.props.mode === "3-panels") {
+      if (!this.diffCanvasRef.current) {
+        this.setState({ error: "Diff canvas not found" });
+        return;
+      }
+      this.diffContext = this.diffCanvasRef.current.getContext("2d");
     }
-
-    this.diffContext = this.diffCanvasRef.current.getContext("2d");
 
     try {
       this.currentMap = new Map({
@@ -202,6 +204,11 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
   };
 
   renderDiff = () => {
+    // Only render diff in 3-panels mode
+    if (this.props.mode !== "3-panels") {
+      return;
+    }
+
     if (!this.currentMap || !this.updateMap || !this.currentMapReady || !this.updateMapReady || !this.diffContext) {
       return;
     }
@@ -217,7 +224,7 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
       this.diffCanvasRef.current!.height = height;
 
       const output = this.diffContext.createImageData(width, height);
-      const threshold = this.props.diffThreshold;
+      const threshold = Math.max(1, this.props.diffThreshold);
       const mode = this.props.mode;
 
       let changedPixels = 0;
@@ -232,29 +239,29 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
 
         const delta = Math.max(Math.abs(ur - cr), Math.abs(ug - cg), Math.abs(ub - cb));
 
-        if (delta <= threshold) {
-          // Below threshold - show as grayscale
-          const gray = Math.round(((ur + ug + ub + cr + cg + cb) / 6) * 0.28);
-          output.data[i] = gray;
-          output.data[i + 1] = gray;
-          output.data[i + 2] = gray;
+        // Show diff: render any pixel with delta >= threshold in bright color
+        if (delta < threshold) {
+          // Below threshold - show as very dark
+          output.data[i] = 20;
+          output.data[i + 1] = 20;
+          output.data[i + 2] = 20;
           output.data[i + 3] = 255;
           continue;
         }
 
         changedPixels += 1;
 
+        // Show changes in bright colors
         if (mode === "visual") {
-          // Visual diff: white intensity based on change magnitude
-          const intensity = Math.min(255, 35 + delta * 3.2);
-          output.data[i] = intensity;
-          output.data[i + 1] = intensity;
-          output.data[i + 2] = intensity;
+          // Visual diff: bright white/yellow for changes
+          const intensity = Math.min(255, 100 + delta * 1.5);
+          output.data[i] = 255;
+          output.data[i + 1] = 255;
+          output.data[i + 2] = 100;
         } else {
-          // Presence diff: blue for current, pink for update
-          const intensity = Math.min(255, 90 + delta * 2.2);
-          output.data[i] = 217;
-          output.data[i + 1] = Math.round(intensity * 0.16);
+          // Presence diff: cyan for differences
+          output.data[i] = 0;
+          output.data[i + 1] = 255;
           output.data[i + 2] = 255;
         }
         output.data[i + 3] = 255;
