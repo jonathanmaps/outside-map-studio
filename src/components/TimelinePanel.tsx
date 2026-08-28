@@ -12,6 +12,7 @@ type TimelinePanelProps = {
   mapStyle: StyleSpecificationWithId
   onStyleChanged: OnStyleChangedCallback
   onClose(): void
+  onSelectCheckpoints?(checkpoints: [string, string] | null): void
 };
 
 type TimelinePanelState = {
@@ -88,8 +89,22 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
   toggleCompare = (id: string) => {
     this.setState(state => {
       const has = state.compareSelection.includes(id);
-      if (has) return { compareSelection: state.compareSelection.filter(x => x !== id) };
-      const next = [...state.compareSelection, id].slice(-2);
+      let next: string[];
+      if (has) {
+        next = state.compareSelection.filter(x => x !== id);
+      } else {
+        next = [...state.compareSelection, id].slice(-2);
+      }
+
+      // Call callback when 2 checkpoints are selected/deselected
+      if (this.props.onSelectCheckpoints) {
+        if (next.length === 2) {
+          this.props.onSelectCheckpoints(next as [string, string]);
+        } else {
+          this.props.onSelectCheckpoints(null);
+        }
+      }
+
       return { compareSelection: next };
     });
   };

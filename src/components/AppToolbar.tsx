@@ -20,6 +20,8 @@ import {
 import { DEVICE_PRESETS } from "../libs/devices";
 import { OutsideLogo } from "./OutsideLogo";
 import { ToolbarOverflow } from "./ToolbarOverflow";
+import { LocationPicker } from "./LocationPicker";
+import type { TestLocation } from "../libs/testLocations";
 import pkgJson from "../../package.json";
 import { withTranslation, type WithTranslation } from "react-i18next";
 import { supportedLanguages } from "../i18n";
@@ -112,6 +114,7 @@ type AppToolbarInternalProps = {
   onCoordinateJump(coordinates: MapCoordinates): void
   deviceId: string | null
   onSelectDevice(id: string | null): void
+  onSelectLocation(location: TestLocation): void
 } & WithTranslation;
 
 class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
@@ -295,6 +298,8 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
             coordinates={this.props.mapCoordinates}
             onJump={this.props.onCoordinateJump}
           />
+
+          <LocationPicker onSelectLocation={this.props.onSelectLocation} />
 
           <ToolbarSelect wdKey="nav:inspect" title={t("View — map, inspect, or colour-vision simulations")}>
             <MdFindInPage />
