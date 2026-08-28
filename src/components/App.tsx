@@ -1318,6 +1318,12 @@ export class App extends React.Component<any, AppState> {
           snapshots={this.getComparisonSnapshots()}
           mode={this.state.comparisonMode}
           diffThreshold={this.state.comparisonDiffThreshold}
+          mapState={{
+            zoom: this.state.mapView.zoom,
+            center: [this.state.mapView.center.lng, this.state.mapView.center.lat] as [number, number],
+            bearing: 0,
+            pitch: 0,
+          }}
         />
       ) : (
         <ComparisonView
