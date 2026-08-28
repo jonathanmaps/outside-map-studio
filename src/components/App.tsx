@@ -32,6 +32,8 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { DeviceFrame } from "./DeviceFrame";
 import { findDevice, type Orientation } from "../libs/devices";
 import { CommandPalette, type Command } from "./CommandPalette";
+import { ComparisonToolbar, type ComparisonMode } from "./ComparisonToolbar";
+import { ComparisonView } from "./ComparisonView";
 import { AICopilotPanel } from "./AICopilotPanel";
 import { TimelinePanel } from "./TimelinePanel";
 import { WorkspacePanel } from "./WorkspacePanel";
@@ -45,6 +47,7 @@ import {
 import {downloadGlyphsMetadata, downloadSpriteMetadata} from "../libs/metadata";
 import { emptyStyle, getAccessToken, replaceAccessTokens } from "../libs/style";
 import { undoMessages, redoMessages } from "../libs/diffmessage";
+import { listSnapshots } from "../libs/snapshots";
 import { createStyleStore, type IStyleStore } from "../libs/store/style-store-factory";
 import { RevisionStore } from "../libs/revisions";
 import { LayerWatcher } from "../libs/layerwatcher";
@@ -54,6 +57,7 @@ import isEqual from "lodash.isequal";
 import { type MapOptions } from "maplibre-gl";
 import { type MappedError, type OnStyleChangedOpts, type StyleSpecificationWithId } from "../libs/definitions";
 import {formatMapCoordinates, parseMapCoordinates, type MapCoordinates} from "../libs/mapCoordinates";
+import type { TestLocation } from "../libs/testLocations";
 
 // Buffer must be defined globally for @maplibre/maplibre-gl-style-spec validate() function to succeed.
 window.Buffer = buffer.Buffer;
@@ -158,6 +162,9 @@ type AppState = {
   deviceId: string | null
   deviceOrientation: Orientation
   deviceFit: boolean
+  comparisonMode: "side-by-side" | "3-panels" | "visual" | "presence"
+  comparisonDiffThreshold: number
+  comparisonCheckpoints: [string, string] | null
 };
 
 export class App extends React.Component<any, AppState> {
@@ -216,6 +223,9 @@ export class App extends React.Component<any, AppState> {
       deviceId: null,
       deviceOrientation: "portrait",
       deviceFit: true,
+      comparisonMode: "side-by-side",
+      comparisonDiffThreshold: 50,
+      comparisonCheckpoints: null,
     };
 
     this.layerWatcher = new LayerWatcher({
@@ -436,6 +446,35 @@ export class App extends React.Component<any, AppState> {
     if (coordinates.zoom === mapView.zoom && coordinates.lat === mapView.center.lat && coordinates.lng === mapView.center.lng) return;
     this.onCoordinateJump(coordinates);
   };
+
+  onSelectLocation = (location: TestLocation) => {
+    this.onCoordinateJump({
+      zoom: location.zoom,
+      lat: location.lat,
+      lng: location.lng
+    });
+  };
+
+  setComparisonCheckpoints = (checkpoints: [string, string] | null) => {
+    this.setState({ comparisonCheckpoints: checkpoints });
+  };
+
+  setComparisonMode = (mode: ComparisonMode) => {
+    this.setState({ comparisonMode: mode });
+  };
+
+  setComparisonDiffThreshold = (threshold: number) => {
+    this.setState({ comparisonDiffThreshold: threshold });
+  };
+
+  closeComparison = () => {
+    this.setState({ comparisonCheckpoints: null });
+  };
+
+  getComparisonSnapshots() {
+    const { mapStyle } = this.state;
+    return listSnapshots(mapStyle.id);
+  }
 
   saveStyle(snapshotStyle: StyleSpecificationWithId) {
     this.styleStore?.save(snapshotStyle);
@@ -1133,6 +1172,7 @@ export class App extends React.Component<any, AppState> {
       onCoordinateJump={this.onCoordinateJump}
       deviceId={this.state.deviceId}
       onSelectDevice={this.setDevice}
+      onSelectLocation={this.onSelectLocation}
     />;
 
     const codeEditor = this.state.isOpen.codeEditor ? <CodeEditor
@@ -1251,6 +1291,7 @@ export class App extends React.Component<any, AppState> {
         mapStyle={this.state.mapStyle}
         onStyleChanged={this.onStyleChanged}
         onClose={this.closeDockPanel}
+        onSelectCheckpoints={this.setComparisonCheckpoints}
       />}
       {this.state.activeDockPanel === "workspace" && <WorkspacePanel
         currentStyleId={this.state.mapStyle.id}
@@ -1259,14 +1300,37 @@ export class App extends React.Component<any, AppState> {
       />}
     </div>;
 
-    return <AppLayout
-      toolbar={toolbar}
-      layerList={layerList}
-      layerEditor={layerEditor}
-      codeEditor={codeEditor}
-      map={this.mapRenderer()}
-      bottom={bottomPanel}
-      modals={modals}
-    />;
+    const comparisonToolbar = this.state.comparisonCheckpoints ? (
+      <ComparisonToolbar
+        mode={this.state.comparisonMode}
+        onModeChange={this.setComparisonMode}
+        diffThreshold={this.state.comparisonDiffThreshold}
+        onDiffThresholdChange={this.setComparisonDiffThreshold}
+        onClose={this.closeComparison}
+      />
+    ) : null;
+
+    const comparisonView = this.state.comparisonCheckpoints ? (
+      <ComparisonView
+        checkpointIds={this.state.comparisonCheckpoints}
+        snapshots={this.getComparisonSnapshots()}
+        mode={this.state.comparisonMode}
+        diffThreshold={this.state.comparisonDiffThreshold}
+      />
+    ) : null;
+
+    return <>
+      {comparisonToolbar}
+      {comparisonView}
+      <AppLayout
+        toolbar={toolbar}
+        layerList={layerList}
+        layerEditor={layerEditor}
+        codeEditor={codeEditor}
+        map={this.mapRenderer()}
+        bottom={bottomPanel}
+        modals={modals}
+      />
+    </>;
   }
 }
