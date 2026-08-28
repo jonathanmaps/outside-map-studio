@@ -25,6 +25,7 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
 
   leftMap: Map | null = null;
   rightMap: Map | null = null;
+  syncing = false;
 
   componentDidMount() {
     this.initializeMaps();
@@ -78,14 +79,41 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
         container: this.leftMapRef.current,
         style: snap1.style,
         ...mapState,
-        interactive: false,
+        interactive: true,
       });
 
       this.rightMap = new Map({
         container: this.rightMapRef.current,
         style: snap2.style,
         ...mapState,
-        interactive: false,
+        interactive: true,
+      });
+
+      // Sync map movements
+      this.leftMap.on("move", () => {
+        if (!this.syncing && this.rightMap) {
+          this.syncing = true;
+          this.rightMap.jumpTo({
+            center: this.leftMap!.getCenter(),
+            zoom: this.leftMap!.getZoom(),
+            bearing: this.leftMap!.getBearing(),
+            pitch: this.leftMap!.getPitch(),
+          });
+          this.syncing = false;
+        }
+      });
+
+      this.rightMap.on("move", () => {
+        if (!this.syncing && this.leftMap) {
+          this.syncing = true;
+          this.leftMap.jumpTo({
+            center: this.rightMap!.getCenter(),
+            zoom: this.rightMap!.getZoom(),
+            bearing: this.rightMap!.getBearing(),
+            pitch: this.rightMap!.getPitch(),
+          });
+          this.syncing = false;
+        }
       });
     } catch (error) {
       console.error("Failed to initialize comparison maps:", error);
@@ -108,6 +136,7 @@ export class ComparisonViewProper extends React.Component<ComparisonViewProps, C
         <div className="comparison-view__pane-label">{snap1?.label || "Checkpoint 1"}</div>
         <div ref={this.leftMapRef} className="comparison-view__map-container" />
       </div>
+      <div className="comparison-view__divider" />
       <div className="comparison-view__map-pane">
         <div className="comparison-view__pane-label">{snap2?.label || "Checkpoint 2"}</div>
         <div ref={this.rightMapRef} className="comparison-view__map-container" />

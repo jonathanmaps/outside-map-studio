@@ -552,6 +552,12 @@
   position: relative;
 }
 
+.comparison-view__divider {
+  flex: 0 0 2px;
+  background: #666;
+  cursor: ew-resize;
+}
+
 .comparison-view__pane-label {
   padding: 8px 12px;
   background: #2a2a2a;
