@@ -206,5 +206,5 @@ export function groupLocationsByCategory(): Map<string, TestLocation[]> {
     grouped.get(location.category)!.push(location);
   });
 
-  return new Map([...categoryOrder.map(cat => [cat, grouped.get(cat)!])].filter(([_, locs]) => locs.length > 0));
+  return new Map<string, TestLocation[]>([...categoryOrder.map(cat => [cat, grouped.get(cat)!] as const)].filter(([_, locs]) => locs.length > 0));
 }

@@ -76,16 +76,21 @@ type ToolbarActionProps = {
   /** Also used as the accessible name — the visible label is hidden by
    * CSS at narrow widths, which drops it from the accessibility tree. */
   label: string
+  /** Keyboard shortcut to display in tooltip */
+  shortcut?: string
 };
 
 class ToolbarAction extends React.Component<ToolbarActionProps> {
   render() {
+    const { label, shortcut } = this.props;
+    const tooltipText = shortcut ? `${label} (${shortcut})` : label;
+
     return <button
       className={classnames("maputnik-toolbar-action", this.props.className)}
       data-wd-key={this.props.wdKey}
       onClick={this.props.onClick}
-      title={this.props.label}
-      aria-label={this.props.label}
+      title={tooltipText}
+      aria-label={tooltipText}
     >
       {this.props.children}
     </button>;
@@ -233,19 +238,19 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
         </div>
 
         <div className="maputnik-toolbar__actions" role="navigation" aria-label="Toolbar">
-          <ToolbarAction wdKey="nav:open" label={t("Open style")} onClick={() => this.props.onToggleModal("open")}>
+          <ToolbarAction wdKey="nav:open" label={t("Open style")} shortcut="O" onClick={() => this.props.onToggleModal("open")}>
             <MdOpenInBrowser />
             <IconText>{t("Open")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:export" label={t("Save / Export style")} onClick={() => this.props.onToggleModal("export")}>
+          <ToolbarAction wdKey="nav:export" label={t("Save / Export style")} shortcut="S" onClick={() => this.props.onToggleModal("export")}>
             <MdSave />
             <IconText>{t("Save")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:code-editor" label={t("Code editor")} onClick={() => this.props.onToggleModal("codeEditor")}>
+          <ToolbarAction wdKey="nav:code-editor" label={t("Code editor")} shortcut="J" onClick={() => this.props.onToggleModal("codeEditor")}>
             <MdCode />
             <IconText>{t("Code")}</IconText>
           </ToolbarAction>
-          <ToolbarAction wdKey="nav:sources" label={t("Data sources")} onClick={() => this.props.onToggleModal("sources")}>
+          <ToolbarAction wdKey="nav:sources" label={t("Data sources")} shortcut="D" onClick={() => this.props.onToggleModal("sources")}>
             <MdLayers />
             <IconText>{t("Sources")}</IconText>
           </ToolbarAction>
@@ -258,6 +263,7 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
           <ToolbarAction
             wdKey="nav:ai-copilot"
             label={t("Copilot — on-device style intelligence")}
+            shortcut="C"
             className={classnames("maputnik-toolbar-action--ai", {
               "maputnik-toolbar-action--active": this.props.activeDockPanel === "ai"
             })}
@@ -269,6 +275,7 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
           <ToolbarAction
             wdKey="nav:timeline"
             label={t("Timeline — checkpoints and diffs")}
+            shortcut="T"
             className={classnames({
               "maputnik-toolbar-action--active": this.props.activeDockPanel === "timeline"
             })}
@@ -280,6 +287,7 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
           <ToolbarAction
             wdKey="nav:workspace"
             label={t("Workspace — all saved styles")}
+            shortcut="W"
             className={classnames({
               "maputnik-toolbar-action--active": this.props.activeDockPanel === "workspace"
             })}

@@ -17,9 +17,15 @@ export async function createStyleStore(onStyleChanged: OnStyleChangedCallback): 
       styleStore = apiStyleStore;
     } catch {
       styleStore = new StyleStore();
+      if ('init' in styleStore) {
+        await (styleStore as any).init();
+      }
     }
   } else {
     styleStore = new StyleStore();
+    if ('init' in styleStore) {
+      await (styleStore as any).init();
+    }
   }
   const styleToLoad = useStyleUrl ? await loadStyleUrl(styleUrl) : await styleStore.getLatestStyle();
   onStyleChanged(styleToLoad, {initialLoad: true, save: false});

@@ -64,7 +64,7 @@ export class ApiStyleStore implements IStyleStore {
   }
 
   // Save current style replacing previous version
-  save(mapStyle: StyleSpecificationWithId) {
+  async save(mapStyle: StyleSpecificationWithId): Promise<StyleSpecificationWithId> {
     const styleJSON = format(
       stripAccessTokens(
         replaceAccessTokens(mapStyle)
@@ -72,17 +72,18 @@ export class ApiStyleStore implements IStyleStore {
     );
 
     const id = mapStyle.id;
-    fetch(this.localUrl + "/styles/" + id, {
-      method: "PUT",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-      },
-      body: styleJSON
-    })
-      .catch(function(error) {
-        if(error) console.error(error);
+    try {
+      await fetch(this.localUrl + "/styles/" + id, {
+        method: "PUT",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: styleJSON
       });
+    } catch(error) {
+      console.error(error);
+    }
     return mapStyle;
   }
 }

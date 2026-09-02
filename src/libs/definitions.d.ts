@@ -14,7 +14,7 @@ export type OnMoveLayerCallback = (move: {oldIndex: number; newIndex: number}) =
 
 export interface IStyleStore {
   getLatestStyle(): Promise<StyleSpecificationWithId>;
-  save(mapStyle: StyleSpecificationWithId): StyleSpecificationWithId;
+  save(mapStyle: StyleSpecificationWithId): Promise<StyleSpecificationWithId>;
 }
 
 export type MappedError = {

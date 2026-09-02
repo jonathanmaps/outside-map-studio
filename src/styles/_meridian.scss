@@ -734,3 +734,23 @@
     color: vars.$color-accent-strong;
   }
 }
+
+// ---- Error banner (storage quota, IO errors, etc) ----
+.meridian-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: vars.$margin-2;
+  padding: vars.$margin-2 vars.$margin-3;
+  margin-bottom: vars.$margin-3;
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: vars.$radius-2;
+  color: #fca5a5;
+  font-size: vars.$font-size-6;
+  line-height: 1.4;
+
+  .meridian-icon-btn {
+    flex: 0 0 auto;
+  }
+}

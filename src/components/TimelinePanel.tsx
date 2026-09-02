@@ -1,9 +1,9 @@
 import React from "react";
-import { MdHistory, MdRestore, MdVisibility, MdDelete, MdAdd, MdArrowForward, MdClose } from "react-icons/md";
+import { MdHistory, MdRestore, MdVisibility, MdDelete, MdAdd, MdArrowForward, MdClose, MdDownload } from "react-icons/md";
 
 import { DockPanel } from "./DockPanel";
 import {
-  listSnapshots, createSnapshot, deleteSnapshot,
+  listSnapshots, createSnapshot, deleteSnapshot, SnapshotStorageError,
   diffStyles, summarizeDiff, type Snapshot, type DiffEntry,
 } from "../libs/snapshots";
 import type { OnStyleChangedCallback, StyleSpecificationWithId } from "../libs/definitions";
@@ -25,6 +25,7 @@ type TimelinePanelState = {
    * style so an edit drops the marker rather than leaving it stale. */
   viewingId: string | null
   compareSelection: string[]
+  error: string | null
 };
 
 function relativeTime(ts: number): string {
@@ -40,23 +41,111 @@ function relativeTime(ts: number): string {
 
 export class TimelinePanel extends React.Component<TimelinePanelProps, TimelinePanelState> {
   state: TimelinePanelState = {
-    snapshots: listSnapshots(this.props.mapStyle.id),
+    snapshots: [],
     savingLabel: null,
     previewingFrom: null,
     viewingId: null,
     compareSelection: [],
+    error: null,
   };
 
-  refresh = () => {
-    this.setState({ snapshots: listSnapshots(this.props.mapStyle.id) });
+  componentDidMount() {
+    this.loadSnapshots();
+  }
+
+  componentDidUpdate(prevProps: TimelinePanelProps) {
+    if (prevProps.mapStyle.id !== this.props.mapStyle.id) {
+      // Clear timeline state when switching to a new style
+      this.setState({
+        snapshots: [],
+        viewingId: null,
+        previewingFrom: null,
+        compareSelection: [],
+        error: null,
+      });
+      this.loadSnapshots();
+    }
+  }
+
+  loadSnapshots = async () => {
+    try {
+      const snapshots = await listSnapshots(this.props.mapStyle.id);
+      this.setState({ snapshots, error: null });
+    } catch (error) {
+      console.error("Failed to load snapshots:", error);
+    }
+  };
+
+  refresh = async () => {
+    await this.loadSnapshots();
   };
 
   startSaving = () => this.setState({ savingLabel: "" });
 
-  confirmSaving = () => {
+  importCheckpoint = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      let style = data;
+      let label = "";
+
+      // Check if it's a checkpoint format (has id, label, style, createdAt)
+      if (data.id && data.label && data.style && typeof data.createdAt === "number") {
+        // It's already a checkpoint
+        style = data.style;
+        label = data.label;
+      } else if (data.version && (data.layers || data.sources)) {
+        // It's a regular map style - convert to checkpoint
+        style = data;
+        label = data.name || file.name.replace(/\.json$/, "").replace(/[-_]/g, " ");
+      } else {
+        throw new Error("File must be either a map style JSON or a checkpoint JSON");
+      }
+
+      // Ensure the style has the right ID
+      style.id = this.props.mapStyle.id;
+
+      // Create the checkpoint with the extracted label
+      await createSnapshot(this.props.mapStyle.id, label || `Imported ${new Date().toLocaleTimeString()}`, style);
+      this.setState({ error: null }, this.refresh);
+
+      // Reset input so same file can be imported again
+      event.target.value = "";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to import checkpoint";
+      this.setState({ error: message });
+    }
+  };
+
+  confirmSaving = async () => {
     const label = this.state.savingLabel?.trim();
-    createSnapshot(this.props.mapStyle.id, label || "", this.props.mapStyle);
-    this.setState({ savingLabel: null }, this.refresh);
+    try {
+      await createSnapshot(this.props.mapStyle.id, label || "", this.props.mapStyle);
+      this.setState({ savingLabel: null, error: null }, this.refresh);
+    } catch (error) {
+      if (error instanceof SnapshotStorageError) {
+        if (error.kind === "quota") {
+          this.setState({
+            error: "Storage full. Delete old checkpoints to save new ones.",
+            savingLabel: null,
+          });
+        } else {
+          this.setState({
+            error: error.message,
+            savingLabel: null,
+          });
+        }
+      } else {
+        this.setState({
+          error: "Failed to save checkpoint",
+          savingLabel: null,
+        });
+      }
+    }
   };
 
   preview = (snapshot: Snapshot) => {
@@ -78,12 +167,30 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
     this.setState({ previewingFrom: null, viewingId: snapshot.id });
   };
 
-  remove = (snapshot: Snapshot) => {
-    deleteSnapshot(this.props.mapStyle.id, snapshot.id);
-    this.setState(state => ({
-      compareSelection: state.compareSelection.filter(id => id !== snapshot.id),
-      viewingId: state.viewingId === snapshot.id ? null : state.viewingId,
-    }), this.refresh);
+  remove = async (snapshot: Snapshot) => {
+    try {
+      await deleteSnapshot(this.props.mapStyle.id, snapshot.id);
+      this.setState(state => ({
+        compareSelection: state.compareSelection.filter(id => id !== snapshot.id),
+        viewingId: state.viewingId === snapshot.id ? null : state.viewingId,
+        error: null,
+      }), this.refresh);
+    } catch (error) {
+      this.setState({ error: "Failed to delete checkpoint" });
+    }
+  };
+
+  exportCheckpoint = (snapshot: Snapshot) => {
+    const json = JSON.stringify(snapshot, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${snapshot.label.replace(/\s+/g, "-").toLowerCase()}-checkpoint.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   toggleCompare = (id: string) => {
@@ -132,6 +239,15 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
         Checkpoints you name on purpose — separate from undo. Preview any of them on the live map, restore, or compare two side by side.
       </p>
 
+      {this.state.error && (
+        <div className="meridian-error-banner">
+          <span>{this.state.error}</span>
+          <button className="meridian-icon-btn" onClick={() => this.setState({ error: null })} title="Dismiss">
+            <MdClose size={14} />
+          </button>
+        </div>
+      )}
+
       {viewingId && (
         <div className="meridian-card meridian-card--viewing">
           <div className="meridian-card-row">
@@ -147,11 +263,23 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
       )}
 
       <div className="meridian-section">
-        {this.state.savingLabel === null ? (
-          <button className="meridian-btn meridian-btn--accent meridian-btn--block" onClick={this.startSaving}>
+        <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
+          <button className="meridian-btn meridian-btn--accent meridian-btn--block" onClick={this.startSaving} style={{ flex: 1 }}>
             <MdAdd size={14} /> Save checkpoint
           </button>
-        ) : (
+          <label className="meridian-btn meridian-btn--accent" style={{ cursor: "pointer", flex: 1, marginBottom: 0 }}>
+            📂 Import
+            <input
+              type="file"
+              accept=".json"
+              onChange={this.importCheckpoint}
+              style={{ display: "none" }}
+              aria-label="Import checkpoint file"
+            />
+          </label>
+        </div>
+
+        {this.state.savingLabel !== null && (
           <div className="meridian-prompt-input-row">
             <input
               autoFocus
@@ -203,6 +331,7 @@ export class TimelinePanel extends React.Component<TimelinePanelProps, TimelineP
                     {isViewing && <span className="meridian-viewing-badge">Viewing</span>}
                     <button className="meridian-icon-btn" title="Preview" onClick={() => this.preview(snapshot)}><MdVisibility size={14} /></button>
                     <button className="meridian-icon-btn" title="Restore" onClick={() => this.restore(snapshot)}><MdRestore size={14} /></button>
+                    <button className="meridian-icon-btn" title="Export as JSON" onClick={() => this.exportCheckpoint(snapshot)}><MdDownload size={14} /></button>
                     <button className="meridian-icon-btn" title="Delete" onClick={() => this.remove(snapshot)}><MdDelete size={14} /></button>
                   </div>
                   <div className="meridian-card-meta">{relativeTime(snapshot.createdAt)} · {summary}</div>

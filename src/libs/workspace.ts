@@ -1,42 +1,46 @@
-// Meridian Workspace — a real multi-file view over the same localStorage
-// keys StyleStore already writes (maputnik:style:<id>), plus a small
-// metadata index for last-modified/pinned that the plain style JSON doesn't
-// carry. This only reflects the local-storage backend (the default when
-// running `npm start`), not the desktop/API-backed store.
+// Meridian Workspace — a real multi-file view over IndexedDB storage
+// (50MB+ quota vs localStorage 5-10MB), plus metadata index for
+// last-modified/pinned that the plain style JSON doesn't carry.
 import type { StyleSpecificationWithId } from "./definitions";
+import { getItem, setItem, removeItem, getAllKeys, STORES } from "./indexeddb";
 
-const STORAGE_PREFIX = "maputnik";
-const STYLE_PREFIX = "style";
-const META_KEY = "maputnik:workspace_meta";
+const LEGACY_STORAGE_PREFIX = "maputnik";
+const LEGACY_STYLE_PREFIX = "style";
+const META_KEY = "workspace_meta";
 
 type Meta = { updatedAt?: number, pinned?: boolean };
 
 function styleKey(id: string) {
-  return [STORAGE_PREFIX, STYLE_PREFIX, id].join(":");
+  return `${LEGACY_STORAGE_PREFIX}:${LEGACY_STYLE_PREFIX}:${id}`;
 }
 
-function loadMetaIndex(): Record<string, Meta> {
+async function loadMetaIndex(): Promise<Record<string, Meta>> {
   try {
-    return JSON.parse(window.localStorage.getItem(META_KEY) || "{}");
+    const raw = await getItem(STORES.WORKSPACE_META, META_KEY);
+    return raw ?? {};
   } catch {
     return {};
   }
 }
 
-function saveMetaIndex(index: Record<string, Meta>) {
-  window.localStorage.setItem(META_KEY, JSON.stringify(index));
+async function saveMetaIndex(index: Record<string, Meta>): Promise<void> {
+  try {
+    await setItem(STORES.WORKSPACE_META, META_KEY, index);
+  } catch (error) {
+    console.error("Failed to save workspace metadata:", error);
+  }
 }
 
-export function touchWorkspaceMeta(id: string) {
-  const index = loadMetaIndex();
+export async function touchWorkspaceMeta(id: string): Promise<void> {
+  const index = await loadMetaIndex();
   index[id] = { ...index[id], updatedAt: Date.now() };
-  saveMetaIndex(index);
+  await saveMetaIndex(index);
 }
 
-export function toggleWorkspacePin(id: string) {
-  const index = loadMetaIndex();
+export async function toggleWorkspacePin(id: string): Promise<void> {
+  const index = await loadMetaIndex();
   index[id] = { ...index[id], pinned: !index[id]?.pinned };
-  saveMetaIndex(index);
+  await saveMetaIndex(index);
 }
 
 export type WorkspaceEntry = {
@@ -64,19 +68,26 @@ function extractSwatches(style: any): string[] {
   return swatches;
 }
 
-export function listWorkspace(): WorkspaceEntry[] {
-  const metaIndex = loadMetaIndex();
+export async function listWorkspace(): Promise<WorkspaceEntry[]> {
+  const metaIndex = await loadMetaIndex();
   const entries: WorkspaceEntry[] = [];
 
-  for (let i = 0; i < window.localStorage.length; i++) {
-    const key = window.localStorage.key(i);
-    if (!key) continue;
+  const keys = await getAllKeys(STORES.WORKSPACE_STYLES);
+  for (const key of keys) {
+    if (typeof key !== "string") continue;
     const parts = key.split(":");
-    if (parts.length !== 3 || parts[0] !== STORAGE_PREFIX || parts[1] !== STYLE_PREFIX) continue;
+    if (parts.length !== 3 || parts[0] !== LEGACY_STORAGE_PREFIX || parts[1] !== LEGACY_STYLE_PREFIX) continue;
 
     const id = parts[2];
     try {
-      const style = JSON.parse(window.localStorage.getItem(key)!);
+      let style = await getItem(STORES.WORKSPACE_STYLES, key) as any;
+      if (!style) continue;
+
+      // Parse if stored as string
+      if (typeof style === "string") {
+        style = JSON.parse(style);
+      }
+
       const meta = metaIndex[id] || {};
       entries.push({
         id,
@@ -87,7 +98,8 @@ export function listWorkspace(): WorkspaceEntry[] {
         swatches: extractSwatches(style),
         style,
       });
-    } catch {
+    } catch (error) {
+      console.warn(`Failed to parse workspace entry ${key}:`, error);
       // Skip unparseable entries rather than let one bad key break the panel.
     }
   }
@@ -95,31 +107,32 @@ export function listWorkspace(): WorkspaceEntry[] {
   return entries.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt - a.updatedAt);
 }
 
-export function renameWorkspaceEntry(id: string, name: string) {
-  const raw = window.localStorage.getItem(styleKey(id));
-  if (!raw) return;
-  const style = JSON.parse(raw);
+export async function renameWorkspaceEntry(id: string, name: string): Promise<void> {
+  const key = styleKey(id);
+  const style = await getItem(STORES.WORKSPACE_STYLES, key);
+  if (!style) return;
   style.name = name;
-  window.localStorage.setItem(styleKey(id), JSON.stringify(style));
-  touchWorkspaceMeta(id);
+  await setItem(STORES.WORKSPACE_STYLES, key, style);
+  await touchWorkspaceMeta(id);
 }
 
-export function duplicateWorkspaceEntry(id: string): StyleSpecificationWithId | null {
-  const raw = window.localStorage.getItem(styleKey(id));
-  if (!raw) return null;
-  const style = JSON.parse(raw);
+export async function duplicateWorkspaceEntry(id: string): Promise<StyleSpecificationWithId | null> {
+  const key = styleKey(id);
+  const style = await getItem(STORES.WORKSPACE_STYLES, key);
+  if (!style) return null;
   const newId = Math.random().toString(36).slice(2, 9);
   style.id = newId;
   style.name = `${style.name || "Untitled style"} copy`;
-  window.localStorage.setItem(styleKey(newId), JSON.stringify(style));
-  touchWorkspaceMeta(newId);
+  const newKey = styleKey(newId);
+  await setItem(STORES.WORKSPACE_STYLES, newKey, style);
+  await touchWorkspaceMeta(newId);
   return style;
 }
 
-export function deleteWorkspaceEntry(id: string) {
-  window.localStorage.removeItem(styleKey(id));
-  window.localStorage.removeItem(`maputnik:snapshots:${id}`);
-  const index = loadMetaIndex();
+export async function deleteWorkspaceEntry(id: string): Promise<void> {
+  const key = styleKey(id);
+  await removeItem(STORES.WORKSPACE_STYLES, key);
+  const index = await loadMetaIndex();
   delete index[id];
-  saveMetaIndex(index);
+  await saveMetaIndex(index);
 }

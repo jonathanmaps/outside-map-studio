@@ -1,142 +1,297 @@
-<img width="200" alt="Maputnik logo" src="https://cdn.jsdelivr.net/gh/maputnik/design/logos/logo-color.png" />
+# Outside Map Studio
 
-# Maputnik
-[![GitHub CI status](https://github.com/maplibre/maputnik/workflows/ci/badge.svg)][github-action-ci]
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)][license]
+A modern, high-performance map style editor built on [MapLibre GL](https://maplibre.org/). Edit, compare, and manage map styles with live preview, version control via checkpoints, and workspace management—all in the browser.
 
-[github-action-ci]: https://github.com/maplibre/maputnik/actions?query=workflow%3Aci
-[license]:          https://tldrlegal.com/license/mit-license
+**Live Demo:** https://outside.maps.app (coming soon)
 
-A free and open visual editor for the [MapLibre GL styles](https://maplibre.org/maplibre-style-spec/)
-targeted at developers and map designers.
+---
 
+## ✨ Key Features
 
-## Usage
+### 🎨 **Visual Style Editor**
+- Drag-and-drop layer management
+- Real-time style preview with interactive map
+- Color picker with live swatches
+- Paint and layout property controls with validation
+- Inspect mode to debug layer rendering
 
-- :link: Design your maps online at **<https://www.maplibre.org/maputnik/>** (all in local storage)
-- :link: Use the [Maputnik CLI](https://github.com/maplibre/maputnik/wiki/Maputnik-CLI) for local style development
-- In a Docker, run this command and browse to http://localhost:8888, Ctrl+C to stop the server.
+### 📸 **Checkpoint System (Timeline)**
+- Save named snapshots of your style at key moments
+- Preview any checkpoint without losing current work
+- Side-by-side comparison of two checkpoints
+- Semantic diff showing exactly what changed between versions
+- Import/export checkpoints as JSON for sharing or backup
+
+### 🗂️ **Workspace Management**
+- Store unlimited styles in browser (IndexedDB, 50MB+ quota)
+- Pin favorite styles for quick access
+- Rename, duplicate, and delete styles
+- See layer count and color swatches at a glance
+- Auto-save metadata (when edited, creation date, etc.)
+
+### 🔀 **Side-by-Side Comparison**
+- Open two checkpoints simultaneously
+- Synchronized pan and zoom
+- Visual divider between maps
+- Live coordinate and zoom level display
+- Smooth performance during interaction
+
+### 💡 **Developer-Friendly**
+- Full keyboard shortcuts (O, S, J, D, C, T, W for main panels)
+- Copy/paste map coordinates (zoom/lat/lng format)
+- Code editor for direct JSON manipulation
+- Global state inspection
+- Support for data sources: raster, vector, GeoJSON, PMTiles
+
+### 🌍 **Data Source Management**
+- Add and configure raster tile sources
+- Vector tile source configuration
+- GeoJSON upload and editing
+- PMTiles support for offline mapping
+- Source layer inspection and debugging
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js** 16+ (18+ recommended)
+- **npm** or **yarn**
+
+### Installation
 
 ```bash
-docker run -it --rm -p 8888:8000 ghcr.io/maplibre/maputnik:main
-```
+# Clone the repository
+git clone https://github.com/jonathanmaps/outside-map-studio.git
+cd outside-map-studio
 
-To see the CLI options (for example file watching or style serving) run:
-```bash
-docker run -it --rm -p 8888:8000 ghcr.io/maplibre/maputnik:main --help
-```
-You might need to mount a volume (`-v`) to be able to use these options.
-
-## Documentation
-
-The documentation can be found in the [Wiki](https://github.com/maplibre/maputnik/wiki). You are welcome to collaborate!
-
-- :link: **Study the [Maputnik Wiki](https://github.com/maplibre/maputnik/wiki)**
-- :video_camera: Design a map from Scratch https://youtu.be/XoDh0gEnBQo
-
-[![Design Map from Scratch](https://j.gifs.com/g5XMgl.gif)](https://youtu.be/XoDh0gEnBQo)
-
-## Develop
-
-Maputnik is written in typescript and is using [React](https://github.com/facebook/react) and [MapLibre GL JS](https://maplibre.org/projects/maplibre-gl-js/).
-
-We ensure building and developing Maputnik works with the [current active LTS Node.js version and above](https://github.com/nodejs/Release#release-schedule).
-
-Check out our [Internationalization guide](./src/locales/README.md) for UI text related changes.
-
-### Getting Involved
-Join the #maplibre or #maputnik slack channel at OSMUS: get an invite at https://slack.openstreetmap.us/ Read the the below guide in order to get familiar with how we do things around here.
-
-Install the deps, start the dev server and open the web browser on `http://localhost:8888/`.
-
-```bash
-# install dependencies
+# Install dependencies
 npm install
-# start dev server
-npm run start
+
+# Start the development server
+npm start
 ```
 
-If you want Maputnik to be accessible externally use the [`--host` option](https://vitejs.dev/config/server-options.html#server-host):
+The app will open at `http://localhost:8902/maputnik/` automatically.
+
+### Build for Production
 
 ```bash
-# start externally accessible dev server
-npm run start -- --host 0.0.0.0
-```
-
-The build process will watch for changes to the filesystem, rebuild and autoreload the editor.
-
-```
+# Build optimized bundle
 npm run build
+
+# Build desktop app (requires Make)
+npm run build-desktop
+
+# Build for Linux
+npm run build-linux
 ```
 
-Lint the JavaScript code.
+---
+
+## 📖 Usage Guide
+
+### Getting Started
+1. **Open a style** – Use `O` or click "Open" to load an existing style JSON
+2. **Add a source** – Click "Sources" to add raster/vector tiles, GeoJSON, or PMTiles
+3. **Edit layers** – Click layers in the left panel to edit paint and layout properties
+4. **Preview live** – Map on the right updates in real-time
+5. **Save checkpoints** – Press `T` to open Timeline and save named snapshots
+
+### Keyboard Shortcuts
+| Shortcut | Action |
+|----------|--------|
+| `O` | Open style |
+| `S` | Save / Export style |
+| `J` | Code editor (JSON) |
+| `D` | Data sources |
+| `C` | Copilot (AI style intelligence) |
+| `T` | Timeline (checkpoints & diffs) |
+| `W` | Workspace (all saved styles) |
+| `⌘K` / `Ctrl+K` | Command palette |
+
+For full shortcut reference, see [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md).
+
+### Comparing Styles
+1. Open Timeline (`T`)
+2. Save two checkpoints (click "Save checkpoint")
+3. Check both checkpoints to compare
+4. Side-by-side view opens automatically
+5. Pan/zoom to inspect differences
+6. Use coordinate display to verify exact locations
+
+### Checkpoint Workflow
+```
+Draft → Save Checkpoint 1 → Edit → Save Checkpoint 2 → Compare → Restore or Continue
+```
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **UI Framework** | React 19 + TypeScript |
+| **Map Library** | MapLibre GL 5.24 |
+| **Storage** | IndexedDB (50MB+) |
+| **State Management** | React local state + component lifecycle |
+| **Styling** | SCSS + CSS variables (light/dark theme) |
+| **Build Tool** | Vite 7 |
+| **Code Editor** | CodeMirror 6 (JSON) |
+| **Accessibility** | WCAG 2.1 (Levels A/AA) |
+| **Testing** | Playwright E2E, Vitest unit |
+| **Linting** | ESLint + Stylelint |
+| **i18n** | i18next (multi-language support) |
+
+---
+
+## 📊 Storage & Performance
+
+### Storage Architecture
+- **IndexedDB**: Styles, checkpoints, workspace metadata (50MB+ quota)
+- **localStorage**: User preferences, temporary state
+- **Fallback**: Browser's cache for map tiles
+
+### Performance Optimizations
+- **Fast coordinate updates** in comparison mode without blocking map interaction
+- **Async/await patterns** for storage operations (non-blocking)
+- **Efficient diff algorithm** for semantic style comparison
+- **Hot Module Replacement (HMR)** during development
+- **Lazy loading** of language packs and resources
+
+### Quota Monitoring
+The app monitors storage usage and displays warnings before quota is exceeded. Export checkpoints regularly for backup.
+
+---
+
+## 🔄 Key Improvements Over Maputnik
+
+| Feature | Outside | Maputnik |
+|---------|---------|----------|
+| **Storage Quota** | 50MB+ (IndexedDB) | 5-10MB (localStorage) |
+| **Checkpoints** | Full with diffs | Basic timeline |
+| **Comparison** | Side-by-side + sync | Limited |
+| **Workspace** | Multi-style management | Single style |
+| **Performance** | Optimized for large styles | Standard |
+| **Theme** | Light/dark system colors | Light only |
+| **Shortcuts** | Full keyboard support | Partial |
+
+---
+
+## 📁 Project Structure
 
 ```
-# run linter
+outside-map-studio/
+├── src/
+│   ├── components/          # React components
+│   │   ├── App.tsx          # Main app container
+│   │   ├── AppToolbar.tsx   # Top navigation
+│   │   ├── TimelinePanel.tsx # Checkpoints UI
+│   │   ├── WorkspacePanel.tsx # Style management
+│   │   ├── ComparisonViewProper.tsx # Side-by-side maps
+│   │   └── ...
+│   ├── libs/                # Business logic
+│   │   ├── snapshots.ts     # Checkpoint storage
+│   │   ├── workspace.ts     # Style management
+│   │   ├── indexeddb.ts     # Storage wrapper
+│   │   ├── mapCoordinates.ts # Coordinate utils
+│   │   └── ...
+│   ├── styles/              # SCSS styling
+│   │   └── _meridian.scss   # Main design system
+│   └── config/              # Static config
+├── desktop/                 # Electron desktop app
+├── KEYBOARD_SHORTCUTS.md    # Full shortcut reference
+├── DETAILED_CHANGELOG.md    # Development changelog
+└── package.json
+```
+
+---
+
+## 🚦 Development
+
+### Running Tests
+
+```bash
+# Unit tests with coverage
+npm run test-unit
+
+# E2E tests
+npm run test-e2e
+
+# Linting
 npm run lint
 npm run lint-css
-npm run sort-styles
 ```
 
-## Tests
+### Code Style
+- **TypeScript** strict mode enabled
+- **ESLint** enforces React hooks, accessibility
+- **Prettier** for consistent formatting
+- **Stylelint** for SCSS best practices
 
-### End-to-end tests
+### Contributing
 
-For E2E testing we use [Playwright](https://playwright.dev/). The tests live in the [`e2e`](/e2e) directory and drive the app through the `MaputnikDriver` page object.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-The first time you run the tests, install the browser:
+---
 
-```
-npx playwright install chromium
-```
+## 📋 Specifications
 
-Playwright automatically starts the dev server (`npm run start`) for you, so you can just run:
+### Supported Map Styles
+- **MapLibre GL JSON** (v8+)
+- **Mapbox GL JSON** (compatible)
+- **Open style formats** (GeoJSON-friendly)
 
-```
-npm run test
-```
+### Tile Source Support
+- **Raster tiles** (XYZ, TMS)
+- **Vector tiles** (MVT)
+- **GeoJSON** (local files or URLs)
+- **PMTiles** (offline vector tiles)
+- **WMS** (experimental)
 
-Some useful options:
+### Browser Support
+- **Chrome/Edge** 90+
+- **Firefox** 88+
+- **Safari** 14+
+- **Mobile browsers** (iOS Safari, Chrome Mobile)
 
-```
-# see the tests run in a headed browser
-npm run test -- --headed
+### Performance Targets
+- **Style preview refresh** < 100ms
+- **Map pan/zoom smoothness** 60 FPS
+- **Checkpoint save** < 500ms
+- **Style diff calculation** < 200ms
 
-# run a single spec / filter by title
-npm run test -- e2e/map.spec.ts
-npm run test -- -g "zoom level"
+---
 
-# open the interactive UI mode
-npx playwright test --ui
-```
+## 🎓 Learning Resources
 
-Running the E2E tests also produces a code-coverage report in `coverage/` (collected via istanbul instrumentation of the dev server).
+- [MapLibre GL Documentation](https://maplibre.org/maplibre-gl-js/)
+- [MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/)
+- [OpenStreetMap Wiki](https://wiki.openstreetmap.org/)
+- [GeoJSON Specification](https://geojson.org/)
 
-### Unit & component tests
+---
 
-Unit tests and component tests run with [Vitest](https://vitest.dev/); component tests (`*.browser.test.tsx`) use Vitest's browser mode with the Playwright provider.
+## 📄 License
 
-```
-npm run test-unit
-```
+MIT License – see [LICENSE](./LICENSE) file for details.
 
-## Release process
+Built with ❤️ by [Jonathan Levy](https://github.com/jonathanmaps)
 
-1. Review [`CHANGELOG.md`](/CHANGELOG.md)
-   - Double-check that all changes included in the release are appropriately documented.
-   - To-be-released changes should be under the "main" header.
-   - Commit any final changes to the changelog.
-2. Run [Create bump version PR](https://github.com/maplibre/maputnik/actions/workflows/create-bump-version-pr.yml) by manual workflow dispatch and set the version number in the input. This will create a PR that changes the changelog and `package.json` file to review and merge.
-3. Once merged, an automatic process will kick in and creates a GitHub release and uploads release assets.
+---
 
+## 🙋 Support & Feedback
 
-## Sponsors
+- **Issues?** Open an [issue on GitHub](https://github.com/jonathanmaps/outside-map-studio/issues)
+- **Feature requests?** [Discussions](https://github.com/jonathanmaps/outside-map-studio/discussions)
+- **Questions?** Check [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md) and [DETAILED_CHANGELOG.md](./DETAILED_CHANGELOG.md)
 
-Thanks to the supporters of the **[Kickstarter campaign](https://www.kickstarter.com/projects/174808720/maputnik-visual-map-editor-for-mapbox-gl)**. This project would not be possible without these commercial and individual sponsors.
-You can see this file's history for previous sponsors of the original Maputnik repo.
-Read more about the MapLibre Sponsorship Program at https://maplibre.org/sponsors/.
+---
 
-## License
-
-Maputnik is [licensed under MIT](LICENSE) and is Copyright (c) Lukas Martinelli and Maplibre contributors.
-As contributor please take extra care of not violating any Mapbox trademarks. Do not get inspired by other map studios and make your own decisions for a good style editor.
+**Version:** 3.1.0  
+**Last Updated:** September 2, 2026  
+**Status:** Active Development

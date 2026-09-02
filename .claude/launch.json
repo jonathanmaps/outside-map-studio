@@ -2,11 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "meridian-dev",
+      "name": "dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "start"],
-      "port": 8888,
-      "url": "http://localhost:8888/maputnik/"
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }

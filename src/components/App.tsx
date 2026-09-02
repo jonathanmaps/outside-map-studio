@@ -47,11 +47,11 @@ import {
 import {downloadGlyphsMetadata, downloadSpriteMetadata} from "../libs/metadata";
 import { emptyStyle, getAccessToken, replaceAccessTokens } from "../libs/style";
 import { undoMessages, redoMessages } from "../libs/diffmessage";
-import { listSnapshots } from "../libs/snapshots";
 import { createStyleStore, type IStyleStore } from "../libs/store/style-store-factory";
 import { RevisionStore } from "../libs/revisions";
 import { LayerWatcher } from "../libs/layerwatcher";
 import { touchWorkspaceMeta } from "../libs/workspace";
+import { initializeDB } from "../libs/indexeddb";
 import tokens from "../config/tokens.json";
 import isEqual from "lodash.isequal";
 import { type MapOptions } from "maplibre-gl";
@@ -412,6 +412,11 @@ export class App extends React.Component<any, AppState> {
   closeDockPanel = () => this.setState({ activeDockPanel: null });
 
   async componentDidMount() {
+    try {
+      await initializeDB();
+    } catch (error) {
+      console.error("Failed to initialize IndexedDB:", error);
+    }
     this.styleStore = await createStyleStore((mapStyle, opts) => this.onStyleChanged(mapStyle, opts));
     window.addEventListener("keydown", this.handleKeyPress);
     window.addEventListener("hashchange", this.onLocationHashChange);
@@ -455,24 +460,14 @@ export class App extends React.Component<any, AppState> {
     this.setState({ comparisonCheckpoints: checkpoints });
   };
 
-  setComparisonMode = (mode: ComparisonMode) => {
-  };
-
-  setComparisonDiffThreshold = (threshold: number) => {
-  };
-
   closeComparison = () => {
     this.setState({ comparisonCheckpoints: null });
   };
 
-  getComparisonSnapshots() {
-    const { mapStyle } = this.state;
-    return listSnapshots(mapStyle.id);
-  }
 
   saveStyle(snapshotStyle: StyleSpecificationWithId) {
-    this.styleStore?.save(snapshotStyle);
-    touchWorkspaceMeta(snapshotStyle.id);
+    this.styleStore?.save(snapshotStyle).catch(err => console.error("Failed to save style:", err));
+    touchWorkspaceMeta(snapshotStyle.id).catch(err => console.error("Failed to update workspace metadata:", err));
   }
 
   updateFonts(urlTemplate: string) {
@@ -1303,7 +1298,7 @@ export class App extends React.Component<any, AppState> {
     const comparisonView = this.state.comparisonCheckpoints ? (
       <ComparisonViewProper
         checkpointIds={this.state.comparisonCheckpoints}
-        snapshots={this.getComparisonSnapshots()}
+        styleId={this.state.mapStyle.id}
         mode="side-by-side"
         diffThreshold={0}
         mapState={{
@@ -1311,6 +1306,9 @@ export class App extends React.Component<any, AppState> {
           center: [this.state.mapView.center.lng, this.state.mapView.center.lat] as [number, number],
           bearing: 0,
           pitch: 0,
+        }}
+        onLocationChange={(zoom, lng, lat) => {
+          this.onCoordinateJump({ zoom, lat, lng });
         }}
       />
     ) : null;

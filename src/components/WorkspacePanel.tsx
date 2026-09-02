@@ -1,6 +1,6 @@
 import React from "react";
 import classnames from "classnames";
-import { MdFolderOpen, MdPushPin, MdContentCopy, MdDelete, MdEdit, MdCheck, MdClose } from "react-icons/md";
+import { MdFolderOpen, MdPushPin, MdContentCopy, MdDelete, MdEdit, MdCheck, MdClose, MdAdd } from "react-icons/md";
 
 import { DockPanel } from "./DockPanel";
 import {
@@ -34,17 +34,36 @@ function relativeTime(ts: number): string {
 
 export class WorkspacePanel extends React.Component<WorkspacePanelProps, WorkspacePanelState> {
   state: WorkspacePanelState = {
-    entries: listWorkspace(),
+    entries: [],
     renamingId: null,
     renameValue: "",
   };
 
-  refresh = () => this.setState({ entries: listWorkspace() });
+  componentDidMount() {
+    this.loadWorkspace();
+  }
 
-  togglePin = (e: React.MouseEvent, id: string) => {
+  loadWorkspace = async () => {
+    try {
+      const entries = await listWorkspace();
+      this.setState({ entries });
+    } catch (error) {
+      console.error("Failed to load workspace:", error);
+    }
+  };
+
+  refresh = async () => {
+    await this.loadWorkspace();
+  };
+
+  togglePin = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    toggleWorkspacePin(id);
-    this.refresh();
+    try {
+      await toggleWorkspacePin(id);
+      await this.refresh();
+    } catch (error) {
+      console.error("Failed to toggle pin:", error);
+    }
   };
 
   startRename = (e: React.MouseEvent, entry: WorkspaceEntry) => {
@@ -52,30 +71,56 @@ export class WorkspacePanel extends React.Component<WorkspacePanelProps, Workspa
     this.setState({ renamingId: entry.id, renameValue: entry.name });
   };
 
-  confirmRename = (e: React.MouseEvent | React.KeyboardEvent) => {
+  confirmRename = async (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
-    if (this.state.renamingId) {
-      renameWorkspaceEntry(this.state.renamingId, this.state.renameValue.trim() || "Untitled style");
+    try {
+      if (this.state.renamingId) {
+        await renameWorkspaceEntry(this.state.renamingId, this.state.renameValue.trim() || "Untitled style");
+      }
+      this.setState({ renamingId: null }, this.refresh);
+    } catch (error) {
+      console.error("Failed to rename:", error);
     }
-    this.setState({ renamingId: null }, this.refresh);
   };
 
-  duplicate = (e: React.MouseEvent, id: string) => {
+  duplicate = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const copy = duplicateWorkspaceEntry(id);
-    this.refresh();
-    if (copy) this.props.onOpenStyle(copy);
+    try {
+      const copy = await duplicateWorkspaceEntry(id);
+      await this.refresh();
+      if (copy) this.props.onOpenStyle(copy);
+    } catch (error) {
+      console.error("Failed to duplicate:", error);
+    }
   };
 
-  remove = (e: React.MouseEvent, entry: WorkspaceEntry) => {
+  remove = async (e: React.MouseEvent, entry: WorkspaceEntry) => {
     e.stopPropagation();
     if (entry.id === this.props.currentStyleId) {
       window.alert("This is the style you're currently editing — switch to another one first.");
       return;
     }
     if (!window.confirm(`Delete "${entry.name}" from this browser? This can't be undone.`)) return;
-    deleteWorkspaceEntry(entry.id);
-    this.refresh();
+    try {
+      await deleteWorkspaceEntry(entry.id);
+      await this.refresh();
+    } catch (error) {
+      console.error("Failed to delete:", error);
+    }
+  };
+
+  newWorkspace = () => {
+    const newStyle: StyleSpecificationWithId = {
+      id: `style_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: "New Style",
+      version: 8,
+      sources: {},
+      layers: [],
+      metadata: {
+        "maputnik:renderer": "mlgljs",
+      },
+    };
+    this.props.onOpenStyle(newStyle);
   };
 
   render() {
@@ -83,8 +128,19 @@ export class WorkspacePanel extends React.Component<WorkspacePanelProps, Workspa
 
     return <DockPanel title="Workspace" icon={<MdFolderOpen />} onClose={this.props.onClose}>
       <p className="meridian-panel-subtitle">
-        Every style saved in this browser, in one place — switch, duplicate, pin, or clear them out without the import/export dance.
+        Every style saved in this browser, in one place — switch, duplicate, pin, or clear them out.
       </p>
+
+      <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+        <button
+          className="meridian-button"
+          style={{ flex: 1, fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+          onClick={this.newWorkspace}
+          title="Create a new blank workspace"
+        >
+          <MdAdd size={14} /> New
+        </button>
+      </div>
 
       {entries.length === 0 && <div className="meridian-empty">Nothing saved yet.</div>}
 
@@ -110,11 +166,12 @@ export class WorkspacePanel extends React.Component<WorkspacePanelProps, Workspa
               <input
                 autoFocus
                 className="meridian-prompt-input"
-                style={{ padding: "3px 6px" }}
+                style={{ padding: "3px 6px", flex: 1, minWidth: 0 }}
                 value={this.state.renameValue}
                 onClick={e => e.stopPropagation()}
                 onChange={e => this.setState({ renameValue: e.target.value })}
                 onKeyDown={e => {
+                  e.stopPropagation();
                   if (e.key === "Enter") this.confirmRename(e);
                   if (e.key === "Escape") this.setState({ renamingId: null });
                 }}
@@ -128,9 +185,25 @@ export class WorkspacePanel extends React.Component<WorkspacePanelProps, Workspa
           </span>
 
           {isRenaming ? (
-            <span className="meridian-workspace-actions" style={{ opacity: 1 }}>
-              <button className="meridian-icon-btn" onClick={this.confirmRename}><MdCheck size={14} /></button>
-              <button className="meridian-icon-btn" onClick={e => { e.stopPropagation(); this.setState({ renamingId: null }); }}><MdClose size={14} /></button>
+            <span className="meridian-workspace-actions" style={{ opacity: 1, pointerEvents: "auto" }}>
+              <button
+                className="meridian-icon-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  this.confirmRename(e);
+                }}
+                title="Confirm"
+              ><MdCheck size={14} /></button>
+              <button
+                className="meridian-icon-btn"
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  this.setState({ renamingId: null });
+                }}
+                title="Cancel"
+              ><MdClose size={14} /></button>
             </span>
           ) : (
             <span className="meridian-workspace-actions">

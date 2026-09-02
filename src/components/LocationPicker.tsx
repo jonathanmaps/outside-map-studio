@@ -1,6 +1,6 @@
 import React from "react";
 import { MdLocationOn } from "react-icons/md";
-import { TEST_LOCATIONS, groupLocationsByCategory, type TestLocation } from "../libs/testLocations";
+import { groupLocationsByCategory, type TestLocation } from "../libs/testLocations";
 
 type LocationPickerProps = {
   onSelectLocation(location: TestLocation): void;

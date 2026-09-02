@@ -1,8 +1,9 @@
 // Meridian Timeline — named checkpoints, separate from the in-memory undo
-// stack, persisted per-style in localStorage so they survive a reload.
+// stack, persisted per-style in IndexedDB (50MB+ quota) so they survive a reload.
 import { diff } from "@maplibre/maplibre-gl-style-spec";
 import type { StyleSpecification } from "maplibre-gl";
 import type { StyleSpecificationWithId } from "./definitions";
+import { getItem, setItem, removeItem, getSnapshotKeysForStyle, STORES } from "./indexeddb";
 
 export type Snapshot = {
   id: string
@@ -11,45 +12,73 @@ export type Snapshot = {
   style: StyleSpecificationWithId
 };
 
-const PREFIX = "maputnik:snapshots:";
-
-function storageKey(styleId: string) {
-  return PREFIX + styleId;
+export class SnapshotStorageError extends Error {
+  constructor(message: string, public readonly kind: "quota" | "io" | "unknown" = "unknown") {
+    super(message);
+    this.name = "SnapshotStorageError";
+  }
 }
 
-export function listSnapshots(styleId: string): Snapshot[] {
+function storageKey(styleId: string, snapshotId?: string): string {
+  return snapshotId ? `${styleId}:${snapshotId}` : styleId;
+}
+
+export async function listSnapshots(styleId: string): Promise<Snapshot[]> {
   try {
-    const raw = window.localStorage.getItem(storageKey(styleId));
-    if (!raw) return [];
-    const arr = JSON.parse(raw) as Snapshot[];
-    return arr.sort((a, b) => b.createdAt - a.createdAt);
-  } catch {
+    const keys = await getSnapshotKeysForStyle(styleId);
+    const snapshots: Snapshot[] = [];
+
+    for (const snapshotId of keys) {
+      const snapshot = await getItem(STORES.SNAPSHOTS, storageKey(styleId, snapshotId));
+      if (snapshot) snapshots.push(snapshot);
+    }
+
+    return snapshots.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error) {
+    console.error("Failed to list snapshots:", error);
     return [];
   }
 }
 
-function saveAll(styleId: string, snapshots: Snapshot[]) {
-  window.localStorage.setItem(storageKey(styleId), JSON.stringify(snapshots));
-}
-
-export function createSnapshot(styleId: string, label: string, style: StyleSpecificationWithId): Snapshot {
+export async function createSnapshot(styleId: string, label: string, style: StyleSpecificationWithId): Promise<Snapshot> {
   const snapshot: Snapshot = {
     id: Math.random().toString(36).slice(2, 9),
-    label: label || `Checkpoint ${listSnapshots(styleId).length + 1}`,
+    label: label || `Checkpoint ${(await listSnapshots(styleId)).length + 1}`,
     createdAt: Date.now(),
     style,
   };
-  const all = [snapshot, ...listSnapshots(styleId)];
-  saveAll(styleId, all);
-  return snapshot;
+
+  try {
+    await setItem(STORES.SNAPSHOTS, storageKey(styleId, snapshot.id), snapshot);
+    return snapshot;
+  } catch (error) {
+    if (error instanceof Error && error.name === "QuotaExceededError") {
+      throw new SnapshotStorageError(
+        "Storage quota exceeded. Delete old checkpoints or export your workspace to free space.",
+        "quota"
+      );
+    }
+    throw new SnapshotStorageError(`Failed to save checkpoint: ${error}`, "io");
+  }
 }
 
-export function deleteSnapshot(styleId: string, snapshotId: string) {
-  saveAll(styleId, listSnapshots(styleId).filter(s => s.id !== snapshotId));
+export async function deleteSnapshot(styleId: string, snapshotId: string): Promise<void> {
+  try {
+    await removeItem(STORES.SNAPSHOTS, storageKey(styleId, snapshotId));
+  } catch (error) {
+    console.error("Failed to delete snapshot:", error);
+  }
 }
 
-export function renameSnapshot(styleId: string, snapshotId: string, label: string) {
-  saveAll(styleId, listSnapshots(styleId).map(s => (s.id === snapshotId ? { ...s, label } : s)));
+export async function renameSnapshot(styleId: string, snapshotId: string, label: string): Promise<void> {
+  try {
+    const snapshot = await getItem(STORES.SNAPSHOTS, storageKey(styleId, snapshotId));
+    if (snapshot) {
+      await setItem(STORES.SNAPSHOTS, storageKey(styleId, snapshotId), { ...snapshot, label });
+    }
+  } catch (error) {
+    console.error("Failed to rename snapshot:", error);
+  }
 }
 
 // ---- Diffing --------------------------------------------------------------
