@@ -4,6 +4,10 @@ A modern, high-performance map style editor built on [MapLibre GL](https://mapli
 
 **Live Demo:** https://outside.maps.app (coming soon)
 
+> **Forked from [Maputnik](https://github.com/maputnik/editor)** — This project builds upon the excellent work of the Maputnik team. We extend their visual editor with enhanced checkpoint management, workspace organization, and performance optimizations for large-scale style development.
+
+---
+
 ---
 
 ## ✨ Key Features
@@ -279,6 +283,17 @@ npm run lint-css
 ## 📄 License
 
 MIT License – see [LICENSE](./LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+**Outside Map Studio** builds on the foundation of:
+
+- **[Maputnik](https://github.com/maputnik/editor)** – The original visual map style editor by Lukas Martinelli and the MapLibre community. This project extends Maputnik with enhanced workspace management, checkpoints with diffs, and performance optimizations.
+- **[MapLibre GL](https://maplibre.org/)** – The powerful open-source map rendering library
+- **[OpenStreetMap](https://www.openstreetmap.org/)** – Free, editable map of the world
+- All contributors to the open-source geospatial community
 
 Built with ❤️ by [Jonathan Levy](https://github.com/jonathanmaps)
 
