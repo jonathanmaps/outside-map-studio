@@ -18,7 +18,7 @@ Outside Map Studio extends Maputnik with **workspaces, checkpoints, side-by-side
 
 **Device Preview** — Test the live map in common phone and tablet viewports while continuing to edit.
 
-**Coordinate Jump** — Paste `zoom/lat/lng` or a compatible map URL to jump directly to a location.
+**Coordinate Jump** — Paste `zoom/lat/lng`  or a map URL, copy the current position, or jump to preset test locations.
 
 ## Quick Start
 
