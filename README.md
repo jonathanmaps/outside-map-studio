@@ -1,312 +1,92 @@
 # Outside Map Studio
 
-A modern, high-performance map style editor built on [MapLibre GL](https://maplibre.org/). Edit, compare, and manage map styles with live preview, version control via checkpoints, and workspace management—all in the browser.
+A fast, browser-based map style editor built on **Maputnik + MapLibre GL** for designing, testing, comparing, and managing production map styles.
 
-**Live Demo:** https://outside.maps.app (coming soon)
+Outside Map Studio extends Maputnik with **workspaces, checkpoints, side-by-side comparison, coordinate navigation, device preview, and local AI style intelligence**.
 
-> **Forked from [Maputnik](https://github.com/maputnik/editor)** — This project builds upon the excellent work of the Maputnik team. We extend their visual editor with enhanced checkpoint management, workspace organization, and performance optimizations for large-scale style development.
+## Highlights
 
----
+**Edit** — Visually edit MapLibre/Mapbox styles with live preview, layer controls, sources, filters, colors, and direct JSON editing.
 
----
+**Compare** — Compare two checkpoints side by side with synchronized pan/zoom and exact coordinate matching.
 
-## ✨ Key Features
+**Timeline** — Save named checkpoints, preview earlier versions, inspect diffs, restore, import, or export.
 
-### 🎨 **Visual Style Editor**
-- Drag-and-drop layer management
-- Real-time style preview with interactive map
-- Color picker with live swatches
-- Paint and layout property controls with validation
-- Inspect mode to debug layer rendering
+**Workspace** — Keep multiple styles organized in-browser. Switch, pin, rename, duplicate, and delete projects.
 
-### 📸 **Checkpoint System (Timeline)**
-- Save named snapshots of your style at key moments
-- Preview any checkpoint without losing current work
-- Side-by-side comparison of two checkpoints
-- Semantic diff showing exactly what changed between versions
-- Import/export checkpoints as JSON for sharing or backup
+**Copilot** — Local, on-device style intelligence for exploring and improving a map style. Includes mood/palette tools, accessibility checks, contrast fixes, and style cleanup without network calls.
 
-### 🗂️ **Workspace Management**
-- Store unlimited styles in browser (IndexedDB, 50MB+ quota)
-- Pin favorite styles for quick access
-- Rename, duplicate, and delete styles
-- See layer count and color swatches at a glance
-- Auto-save metadata (when edited, creation date, etc.)
+**Device Preview** — Test the live map in common phone and tablet viewports while continuing to edit.
 
-### 🔀 **Side-by-Side Comparison**
-- Open two checkpoints simultaneously
-- Synchronized pan and zoom
-- Visual divider between maps
-- Live coordinate and zoom level display
-- Smooth performance during interaction
+**Coordinate Jump** — Paste `zoom/lat/lng` or a compatible map URL to jump directly to a location.
 
-### 💡 **Developer-Friendly**
-- Full keyboard shortcuts (O, S, J, D, C, T, W for main panels)
-- Copy/paste map coordinates (zoom/lat/lng format)
-- Code editor for direct JSON manipulation
-- Global state inspection
-- Support for data sources: raster, vector, GeoJSON, PMTiles
-
-### 🌍 **Data Source Management**
-- Add and configure raster tile sources
-- Vector tile source configuration
-- GeoJSON upload and editing
-- PMTiles support for offline mapping
-- Source layer inspection and debugging
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- **Node.js** 16+ (18+ recommended)
-- **npm** or **yarn**
-
-### Installation
+## Quick Start
 
 ```bash
-# Clone the repository
 git clone https://github.com/jonathanmaps/outside-map-studio.git
 cd outside-map-studio
-
-# Install dependencies
 npm install
-
-# Start the development server
 npm start
 ```
 
-The app will open at `http://localhost:8902/maputnik/` automatically.
+Open **http://localhost:8900/maputnik/**.
 
-### Build for Production
+Requires Node.js 16+; Node 18+ recommended.
 
-```bash
-# Build optimized bundle
-npm run build
+## Core Workflow
 
-# Build desktop app (requires Make)
-npm run build-desktop
+**Open → Edit → Checkpoint → Iterate → Compare → Export**
 
-# Build for Linux
-npm run build-linux
-```
+Timeline checkpoints let you preserve meaningful design states without creating separate style files. Compare view then lets you evaluate versions at the same location and zoom.
 
----
+## Essential Shortcuts
 
-## 📖 Usage Guide
-
-### Getting Started
-1. **Open a style** – Use `O` or click "Open" to load an existing style JSON
-2. **Add a source** – Click "Sources" to add raster/vector tiles, GeoJSON, or PMTiles
-3. **Edit layers** – Click layers in the left panel to edit paint and layout properties
-4. **Preview live** – Map on the right updates in real-time
-5. **Save checkpoints** – Press `T` to open Timeline and save named snapshots
-
-### Keyboard Shortcuts
-| Shortcut | Action |
-|----------|--------|
+| Key | Action |
+| --- | --- |
+| `⌘K / Ctrl+K` or `/` | Command palette |
 | `O` | Open style |
-| `S` | Save / Export style |
-| `J` | Code editor (JSON) |
+| `E` | Export style |
 | `D` | Data sources |
-| `C` | Copilot (AI style intelligence) |
-| `T` | Timeline (checkpoints & diffs) |
-| `W` | Workspace (all saved styles) |
-| `⌘K` / `Ctrl+K` | Command palette |
+| `S` | Settings |
+| `J` | JSON editor |
+| `C` | Copilot |
+| `T` | Timeline |
+| `W` | Workspace |
+| `F` | Find layers |
+| `[` / `]` | Previous / next layer |
+| `V` / `X` | Toggle visibility / isolate layer |
+| `?` | Shortcut help |
 
-For full shortcut reference, see [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md).
+See [`KEYBOARD_SHORTCUTS.md`](KEYBOARD_SHORTCUTS.md) for the full reference.
 
-### Comparing Styles
-1. Open Timeline (`T`)
-2. Save two checkpoints (click "Save checkpoint")
-3. Check both checkpoints to compare
-4. Side-by-side view opens automatically
-5. Pan/zoom to inspect differences
-6. Use coordinate display to verify exact locations
-
-### Checkpoint Workflow
-```
-Draft → Save Checkpoint 1 → Edit → Save Checkpoint 2 → Compare → Restore or Continue
-```
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **UI Framework** | React 19 + TypeScript |
-| **Map Library** | MapLibre GL 5.24 |
-| **Storage** | IndexedDB (50MB+) |
-| **State Management** | React local state + component lifecycle |
-| **Styling** | SCSS + CSS variables (light/dark theme) |
-| **Build Tool** | Vite 7 |
-| **Code Editor** | CodeMirror 6 (JSON) |
-| **Accessibility** | WCAG 2.1 (Levels A/AA) |
-| **Testing** | Playwright E2E, Vitest unit |
-| **Linting** | ESLint + Stylelint |
-| **i18n** | i18next (multi-language support) |
-
----
-
-## 📊 Storage & Performance
-
-### Storage Architecture
-- **IndexedDB**: Styles, checkpoints, workspace metadata (50MB+ quota)
-- **localStorage**: User preferences, temporary state
-- **Fallback**: Browser's cache for map tiles
-
-### Performance Optimizations
-- **Fast coordinate updates** in comparison mode without blocking map interaction
-- **Async/await patterns** for storage operations (non-blocking)
-- **Efficient diff algorithm** for semantic style comparison
-- **Hot Module Replacement (HMR)** during development
-- **Lazy loading** of language packs and resources
-
-### Quota Monitoring
-The app monitors storage usage and displays warnings before quota is exceeded. Export checkpoints regularly for backup.
-
----
-
-## 🔄 Key Improvements Over Maputnik
-
-| Feature | Outside | Maputnik |
-|---------|---------|----------|
-| **Storage Quota** | 50MB+ (IndexedDB) | 5-10MB (localStorage) |
-| **Checkpoints** | Full with diffs | Basic timeline |
-| **Comparison** | Side-by-side + sync | Limited |
-| **Workspace** | Multi-style management | Single style |
-| **Performance** | Optimized for large styles | Standard |
-| **Theme** | Light/dark system colors | Light only |
-| **Shortcuts** | Full keyboard support | Partial |
-
----
-
-## 📁 Project Structure
-
-```
-outside-map-studio/
-├── src/
-│   ├── components/          # React components
-│   │   ├── App.tsx          # Main app container
-│   │   ├── AppToolbar.tsx   # Top navigation
-│   │   ├── TimelinePanel.tsx # Checkpoints UI
-│   │   ├── WorkspacePanel.tsx # Style management
-│   │   ├── ComparisonViewProper.tsx # Side-by-side maps
-│   │   └── ...
-│   ├── libs/                # Business logic
-│   │   ├── snapshots.ts     # Checkpoint storage
-│   │   ├── workspace.ts     # Style management
-│   │   ├── indexeddb.ts     # Storage wrapper
-│   │   ├── mapCoordinates.ts # Coordinate utils
-│   │   └── ...
-│   ├── styles/              # SCSS styling
-│   │   └── _meridian.scss   # Main design system
-│   └── config/              # Static config
-├── desktop/                 # Electron desktop app
-├── KEYBOARD_SHORTCUTS.md    # Full shortcut reference
-├── DETAILED_CHANGELOG.md    # Development changelog
-└── package.json
-```
-
----
-
-## 🚦 Development
-
-### Running Tests
+## Development
 
 ```bash
-# Unit tests with coverage
-npm run test-unit
-
-# E2E tests
-npm run test-e2e
-
-# Linting
-npm run lint
-npm run lint-css
+npm start          # Development server
+npm run build      # Production build
+npm run test       # Playwright E2E tests
+npm run test-unit  # Vitest unit tests
+npm run lint       # ESLint
+npm run lint-css   # Stylelint
 ```
 
-### Code Style
-- **TypeScript** strict mode enabled
-- **ESLint** enforces React hooks, accessibility
-- **Prettier** for consistent formatting
-- **Stylelint** for SCSS best practices
+Built with **React, TypeScript, MapLibre GL, Vite, CodeMirror, SCSS, and IndexedDB**.
 
-### Contributing
+## Docs
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- [`START-HERE.md`](START-HERE.md) — Quick orientation
+- [`KEYBOARD_SHORTCUTS.md`](KEYBOARD_SHORTCUTS.md) — Shortcut reference
+- [`CHANGELOG.md`](CHANGELOG.md) — Release history
+- [`DETAILED_CHANGELOG.md`](DETAILED_CHANGELOG.md) — Outside-specific evolution
 
----
+## Maputnik
 
-## 📋 Specifications
+Outside Map Studio is based on **Maputnik**, the open-source visual map style editor originally created by Lukas Martinelli and developed by the MapLibre community.
 
-### Supported Map Styles
-- **MapLibre GL JSON** (v8+)
-- **Mapbox GL JSON** (compatible)
-- **Open style formats** (GeoJSON-friendly)
+It retains Maputnik's core style-editing experience while adding workflow tools for iterative map design, comparison, project organization, local style intelligence, and interface/performance improvements.
 
-### Tile Source Support
-- **Raster tiles** (XYZ, TMS)
-- **Vector tiles** (MVT)
-- **GeoJSON** (local files or URLs)
-- **PMTiles** (offline vector tiles)
-- **WMS** (experimental)
+Also built on **MapLibre GL**, **OpenStreetMap**, and the broader open-source geospatial community.
 
-### Browser Support
-- **Chrome/Edge** 90+
-- **Firefox** 88+
-- **Safari** 14+
-- **Mobile browsers** (iOS Safari, Chrome Mobile)
+## License
 
-### Performance Targets
-- **Style preview refresh** < 100ms
-- **Map pan/zoom smoothness** 60 FPS
-- **Checkpoint save** < 500ms
-- **Style diff calculation** < 200ms
-
----
-
-## 🎓 Learning Resources
-
-- [MapLibre GL Documentation](https://maplibre.org/maplibre-gl-js/)
-- [MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/)
-- [OpenStreetMap Wiki](https://wiki.openstreetmap.org/)
-- [GeoJSON Specification](https://geojson.org/)
-
----
-
-## 📄 License
-
-MIT License – see [LICENSE](./LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-**Outside Map Studio** builds on the foundation of:
-
-- **[Maputnik](https://github.com/maputnik/editor)** – The original visual map style editor by Lukas Martinelli and the MapLibre community. This project extends Maputnik with enhanced workspace management, checkpoints with diffs, and performance optimizations.
-- **[MapLibre GL](https://maplibre.org/)** – The powerful open-source map rendering library
-- **[OpenStreetMap](https://www.openstreetmap.org/)** – Free, editable map of the world
-- All contributors to the open-source geospatial community
-
-Built with ❤️ by [Jonathan Levy](https://github.com/jonathanmaps)
-
----
-
-## 🙋 Support & Feedback
-
-- **Issues?** Open an [issue on GitHub](https://github.com/jonathanmaps/outside-map-studio/issues)
-- **Feature requests?** [Discussions](https://github.com/jonathanmaps/outside-map-studio/discussions)
-- **Questions?** Check [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md) and [DETAILED_CHANGELOG.md](./DETAILED_CHANGELOG.md)
-
----
-
-**Version:** 3.1.0  
-**Last Updated:** September 2, 2026  
-**Status:** Active Development
+MIT — see [`LICENSE`](LICENSE).
